@@ -1,0 +1,145 @@
+substitutions:
+  device_name: "esp32-dashboard-small"
+  friendly_name: "ESP32 Small Dashboard"
+  
+esphome:
+  name: ${device_name}
+  platform: ESP32
+  board: esp32dev
+  
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret ap_password
+
+captive_portal:
+logger:
+
+api:
+  encryption:
+    key: !secret ha_api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: "America/New_York"
+
+# Fonts optimized for small displays
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_tiny
+    size: 10
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_small
+    size: 14
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_medium
+    size: 18
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_large
+    size: 28
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: font_icons
+    size: 24
+    glyphs:
+      - "\U000F067F" # thermometer
+      - "\U000F058E" # water-percent
+      - "\U000F06E8" # home
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+# Configuration for 2.9" display (296x128 pixels)
+display:
+  - platform: waveshare_epaper
+    cs_pin: GPIO5
+    dc_pin: GPIO17
+    busy_pin: GPIO4
+    reset_pin: GPIO16
+    model: 2.90in
+    update_interval: 300s
+    rotation: 0
+    lambda: |-
+      const int w = it.get_width();  // 296
+      const int h = it.get_height(); // 128
+      
+      // Top section - Time (larger)
+      it.strftime(w/2, 5, id(font_large), TextAlign::TOP_CENTER, "%H:%M", id(ha_time).now());
+      it.strftime(w/2, 38, id(font_small), TextAlign::TOP_CENTER, "%a %b %d", id(ha_time).now());
+      
+      // Divider line
+      it.line(0, 65, w, 65);
+      
+      // Bottom section - Sensors in two columns
+      int y_base = 72;
+      
+      // Left column - Indoor temp
+      if (id(indoor_temp).has_state()) {
+        it.printf(10, y_base, id(font_icons), "\U000F06E8");
+        it.printf(40, y_base + 3, id(font_medium), "%.1f°", id(indoor_temp).state);
+      }
+      
+      // Right column - Outdoor temp
+      if (id(outdoor_temp).has_state()) {
+        it.printf(w/2 + 10, y_base, id(font_icons), "\U000F067F");
+        it.printf(w/2 + 40, y_base + 3, id(font_medium), "%.1f°", id(outdoor_temp).state);
+      }
+      
+      // Bottom status
+      if (WiFi.isConnected()) {
+        it.printf(w/2, h - 2, id(font_tiny), TextAlign::BOTTOM_CENTER, "WiFi: %.0fdBm", WiFi.RSSI());
+      }
+
+sensor:
+  - platform: homeassistant
+    id: indoor_temp
+    entity_id: sensor.indoor_temperature  # Change to your sensor
+    internal: true
+    
+  - platform: homeassistant
+    id: outdoor_temp
+    entity_id: sensor.outdoor_temperature  # Change to your sensor
+    internal: true
+    
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    update_interval: 60s
+
+button:
+  - platform: restart
+    name: "${friendly_name} Restart"
+  - platform: template
+    name: "${friendly_name} Refresh Display"
+    on_press:
+      - component.update: display
+
+# Alternative configuration for 2.13" display (250x122 pixels)
+# Uncomment and adjust if using 2.13" display
+# display:
+#   - platform: waveshare_epaper
+#     cs_pin: GPIO5
+#     dc_pin: GPIO17
+#     busy_pin: GPIO4
+#     reset_pin: GPIO16
+#     model: 2.13in-ttgo
+#     update_interval: 300s
+#     lambda: |-
+#       it.strftime(125, 10, id(font_large), TextAlign::TOP_CENTER, "%H:%M", id(ha_time).now());
+#       it.strftime(125, 45, id(font_small), TextAlign::TOP_CENTER, "%a %b %d", id(ha_time).now());
+#       
+#       if (id(indoor_temp).has_state()) {
+#         it.printf(125, 75, id(font_medium), TextAlign::TOP_CENTER, 
+#                   "Indoor: %.1f°", id(indoor_temp).state);
+#       }
+#       
+#       if (id(outdoor_temp).has_state()) {
+#         it.printf(125, 100, id(font_medium), TextAlign::TOP_CENTER, 
+#                   "Outdoor: %.1f°", id(outdoor_temp).state);
+#       }
