@@ -301,7 +301,7 @@ script:
 #  include_internal: true
 #  auth:
 #    username: "flkgjlaskfjg"
-#    password: "435234jkdsfLKHJKJJKL98(()HHJH)"
+#    password: !secret web_server_password
 #  local: true
 
 ################################################################################
@@ -811,6 +811,8 @@ color:
     red: 0%
     green: 0%
     blue: 0%
+  - id: not_active_text
+    hex: 444D52
 
 
 font:
@@ -2123,7 +2125,7 @@ lvgl:
                     text: "today"
                     #id: luxpower_lxp_pv_power_text2
                     text_font: regular_25
-                    text_color: 0x444D52
+                    text_color: not_active_text
                  - label:
                     x: 100
                     y: 90
@@ -2132,7 +2134,7 @@ lvgl:
                     text: "---KWh"
                     id: daily_grid_energy_text2
                     text_font: regular_30
-                    text_color: 0x444D52                    
+                    text_color: not_active_text
 ########################################################### END OF VLGL
 
 
