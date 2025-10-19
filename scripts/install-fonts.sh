@@ -49,10 +49,12 @@ rm -rf roboto-unhinted roboto-unhinted.zip
 # Download Material Design Icons
 echo ""
 echo "Downloading Material Design Icons..."
+# Using a specific version tag for stability (v7.4.47 is a stable release)
+MDI_VERSION="7.4.47"
 if command -v wget &> /dev/null; then
-    wget -q --show-progress https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf
+    wget -q --show-progress "https://github.com/Templarian/MaterialDesign-Webfont/raw/v${MDI_VERSION}/fonts/materialdesignicons-webfont.ttf"
 elif command -v curl &> /dev/null; then
-    curl -L -o materialdesignicons-webfont.ttf https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf
+    curl -L -o materialdesignicons-webfont.ttf "https://github.com/Templarian/MaterialDesign-Webfont/raw/v${MDI_VERSION}/fonts/materialdesignicons-webfont.ttf"
 fi
 
 cd ..
