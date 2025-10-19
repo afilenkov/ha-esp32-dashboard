@@ -1,0 +1,71 @@
+substitutions:
+  device_name: "esp32-dashboard-basic"
+  friendly_name: "ESP32 Dashboard Basic"
+  
+esphome:
+  name: ${device_name}
+  platform: ESP32
+  board: esp32dev
+  
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret ap_password
+
+captive_portal:
+logger:
+
+api:
+  encryption:
+    key: !secret ha_api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# Time component
+time:
+  - platform: homeassistant
+    id: ha_time
+
+# Simple font
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_small
+    size: 16
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_large
+    size: 32
+
+# SPI for display
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+# Basic display configuration
+display:
+  - platform: waveshare_epaper
+    cs_pin: GPIO5
+    dc_pin: GPIO17
+    busy_pin: GPIO4
+    reset_pin: GPIO16
+    model: 2.90in  # Change to your display model
+    update_interval: 300s
+    lambda: |-
+      // Simple time display
+      it.strftime(it.get_width()/2, it.get_height()/2, id(font_large), 
+                  TextAlign::CENTER, "%H:%M", id(ha_time).now());
+      
+      it.strftime(it.get_width()/2, it.get_height()/2 + 40, id(font_small), 
+                  TextAlign::CENTER, "%A, %B %d", id(ha_time).now());
+
+sensor:
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    update_interval: 60s
+
+button:
+  - platform: restart
+    name: "${friendly_name} Restart"

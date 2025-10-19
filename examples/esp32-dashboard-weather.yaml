@@ -1,0 +1,192 @@
+substitutions:
+  device_name: "esp32-dashboard-weather"
+  friendly_name: "ESP32 Weather Dashboard"
+  
+esphome:
+  name: ${device_name}
+  platform: ESP32
+  board: esp32dev
+  
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret ap_password
+
+captive_portal:
+logger:
+
+api:
+  encryption:
+    key: !secret ha_api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: "America/New_York"
+
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_small
+    size: 14
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_medium
+    size: 20
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_large
+    size: 36
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_xlarge
+    size: 56
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: font_icons_small
+    size: 32
+    glyphs:
+      - "\U000F067F" # thermometer
+      - "\U000F058E" # water-percent
+      - "\U000F059D" # weather-windy
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: font_icons_large
+    size: 96
+    glyphs:
+      - "\U000F0590" # weather-cloudy
+      - "\U000F0599" # weather-sunny
+      - "\U000F0594" # weather-rainy
+      - "\U000F0593" # weather-pouring
+      - "\U000F0591" # weather-fog
+      - "\U000F0595" # weather-snowy
+      - "\U000F0596" # weather-snowy-rainy
+      - "\U000F0598" # weather-partly-cloudy
+      - "\U000F0F2F" # weather-night
+      - "\U000F086E" # weather-lightning
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+display:
+  - platform: waveshare_epaper
+    cs_pin: GPIO5
+    dc_pin: GPIO17
+    busy_pin: GPIO4
+    reset_pin: GPIO16
+    model: 7.50inv2
+    update_interval: 600s
+    rotation: 0
+    lambda: |-
+      const int w = it.get_width();
+      const int h = it.get_height();
+      
+      // Weather icon mapping
+      std::string weather_icon = "\U000F0599"; // Default sunny
+      if (id(weather_condition).has_state()) {
+        std::string condition = id(weather_condition).state;
+        if (condition == "cloudy") weather_icon = "\U000F0590";
+        else if (condition == "rainy" || condition == "rain") weather_icon = "\U000F0594";
+        else if (condition == "pouring") weather_icon = "\U000F0593";
+        else if (condition == "snowy" || condition == "snow") weather_icon = "\U000F0595";
+        else if (condition == "partlycloudy") weather_icon = "\U000F0598";
+        else if (condition == "lightning" || condition == "lightning-rainy") weather_icon = "\U000F086E";
+        else if (condition == "fog") weather_icon = "\U000F0591";
+      }
+      
+      // Main temperature display (left side)
+      it.printf(w/2 - 100, 80, id(font_icons_large), TextAlign::CENTER, weather_icon.c_str());
+      
+      if (id(outside_temperature).has_state()) {
+        it.printf(w/2 - 100, 200, id(font_xlarge), TextAlign::CENTER, "%.0f°", id(outside_temperature).state);
+      }
+      
+      // Weather details (right side)
+      int x_right = w/2 + 50;
+      int y = 50;
+      
+      it.strftime(x_right, y, id(font_large), TextAlign::TOP_LEFT, "%H:%M", id(ha_time).now());
+      y += 50;
+      it.strftime(x_right, y, id(font_medium), TextAlign::TOP_LEFT, "%A", id(ha_time).now());
+      y += 30;
+      it.strftime(x_right, y, id(font_medium), TextAlign::TOP_LEFT, "%B %d, %Y", id(ha_time).now());
+      
+      y += 60;
+      
+      // Humidity
+      if (id(outside_humidity).has_state()) {
+        it.printf(x_right, y, id(font_icons_small), "\U000F058E");
+        it.printf(x_right + 40, y + 5, id(font_medium), "%.0f%%", id(outside_humidity).state);
+        y += 40;
+      }
+      
+      // Wind speed (if available)
+      if (id(wind_speed).has_state()) {
+        it.printf(x_right, y, id(font_icons_small), "\U000F059D");
+        it.printf(x_right + 40, y + 5, id(font_medium), "%.1f m/s", id(wind_speed).state);
+        y += 40;
+      }
+      
+      // Forecast section
+      y = h - 150;
+      it.line(0, y - 10, w, y - 10);
+      it.printf(10, y, id(font_medium), "Forecast");
+      
+      y += 35;
+      if (id(forecast_temp_high).has_state() && id(forecast_temp_low).has_state()) {
+        it.printf(10, y, id(font_small), "High: %.0f°  Low: %.0f°", 
+                  id(forecast_temp_high).state, id(forecast_temp_low).state);
+      }
+      
+      // Footer
+      y = h - 30;
+      it.strftime(10, y, id(font_small), "Updated: %H:%M", id(ha_time).now());
+
+sensor:
+  - platform: homeassistant
+    id: outside_temperature
+    entity_id: weather.home
+    attribute: temperature
+    internal: true
+    
+  - platform: homeassistant
+    id: outside_humidity
+    entity_id: weather.home
+    attribute: humidity
+    internal: true
+    
+  - platform: homeassistant
+    id: wind_speed
+    entity_id: weather.home
+    attribute: wind_speed
+    internal: true
+    
+  - platform: homeassistant
+    id: forecast_temp_high
+    entity_id: sensor.forecast_high  # Change to your forecast sensor
+    internal: true
+    
+  - platform: homeassistant
+    id: forecast_temp_low
+    entity_id: sensor.forecast_low  # Change to your forecast sensor
+    internal: true
+    
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    update_interval: 60s
+
+text_sensor:
+  - platform: homeassistant
+    id: weather_condition
+    entity_id: weather.home
+    attribute: condition
+    internal: true
+
+button:
+  - platform: restart
+    name: "${friendly_name} Restart"
+  - platform: template
+    name: "${friendly_name} Refresh Display"
+    on_press:
+      - component.update: display

@@ -1,0 +1,162 @@
+substitutions:
+  device_name: "esp32-dashboard-battery"
+  friendly_name: "ESP32 Battery Dashboard"
+  
+esphome:
+  name: ${device_name}
+  platform: ESP32
+  board: esp32dev
+  
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Fast connect for battery saving
+  fast_connect: true
+  # Disable power saving for stable connection during wake
+  power_save_mode: none
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret ap_password
+
+captive_portal:
+
+logger:
+  level: INFO  # Reduce logging to save power
+
+api:
+  encryption:
+    key: !secret ha_api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: "America/New_York"
+    on_time_sync:
+      # Update display and go to sleep after time sync
+      - component.update: epaper_display
+      - delay: 5s
+      - deep_sleep.enter: deep_sleep_control
+
+# Deep sleep configuration for battery operation
+deep_sleep:
+  id: deep_sleep_control
+  run_duration: 30s       # Stay awake for 30 seconds
+  sleep_duration: 10min   # Sleep for 10 minutes between updates
+  
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_small
+    size: 14
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_medium
+    size: 24
+  - file: "fonts/Roboto-Bold.ttf"
+    id: font_large
+    size: 42
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: font_icons
+    size: 48
+    glyphs:
+      - "\U000F067F" # thermometer
+      - "\U000F058E" # water-percent
+      - "\U000F0079" # battery-high
+      - "\U000F0082" # battery-low
+      - "\U000F008E" # battery-outline
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+display:
+  - platform: waveshare_epaper
+    id: epaper_display
+    cs_pin: GPIO5
+    dc_pin: GPIO17
+    busy_pin: GPIO4
+    reset_pin: GPIO16
+    model: 2.90in  # Good for battery operation
+    update_interval: never  # Manual update only
+    lambda: |-
+      const int w = it.get_width();
+      const int h = it.get_height();
+      
+      // Time display
+      it.strftime(w/2, 20, id(font_large), TextAlign::TOP_CENTER, "%H:%M", id(ha_time).now());
+      it.strftime(w/2, 70, id(font_medium), TextAlign::TOP_CENTER, "%a, %b %d", id(ha_time).now());
+      
+      // Temperature
+      int y = 120;
+      if (id(temperature).has_state()) {
+        it.printf(10, y, id(font_icons), "\U000F067F");
+        it.printf(70, y + 5, id(font_medium), "%.1f°", id(temperature).state);
+      }
+      
+      // Battery level
+      y = 180;
+      if (id(battery_level).has_state()) {
+        float battery = id(battery_level).state;
+        std::string battery_icon;
+        if (battery > 80) battery_icon = "\U000F0079"; // high
+        else if (battery > 20) battery_icon = "\U000F008E"; // outline
+        else battery_icon = "\U000F0082"; // low
+        
+        it.printf(10, y, id(font_icons), battery_icon.c_str());
+        it.printf(70, y + 5, id(font_medium), "%.0f%%", battery);
+      }
+      
+      // Next update time
+      it.printf(w/2, h - 10, id(font_small), TextAlign::BOTTOM_CENTER, 
+                "Next update in 10 min");
+
+sensor:
+  - platform: homeassistant
+    id: temperature
+    entity_id: sensor.outdoor_temperature  # Change to your sensor
+    internal: true
+    
+  # Battery voltage monitoring (requires voltage divider on GPIO34)
+  - platform: adc
+    pin: GPIO34
+    name: "${friendly_name} Battery Voltage"
+    id: battery_voltage
+    attenuation: 11db
+    update_interval: 10s
+    filters:
+      - multiply: 2.0  # Adjust based on your voltage divider
+    
+  # Calculate battery percentage
+  - platform: template
+    name: "${friendly_name} Battery Level"
+    id: battery_level
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    lambda: |-
+      // For typical Li-Ion battery (4.2V full, 3.0V empty)
+      float voltage = id(battery_voltage).state;
+      float percentage = (voltage - 3.0) / (4.2 - 3.0) * 100.0;
+      if (percentage > 100) return 100;
+      if (percentage < 0) return 0;
+      return percentage;
+    update_interval: 10s
+    
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    update_interval: 10s
+
+button:
+  - platform: restart
+    name: "${friendly_name} Restart"
+    
+  - platform: template
+    name: "${friendly_name} Prevent Deep Sleep"
+    on_press:
+      - deep_sleep.prevent: deep_sleep_control
+      
+  - platform: template
+    name: "${friendly_name} Enter Deep Sleep"
+    on_press:
+      - deep_sleep.enter: deep_sleep_control
