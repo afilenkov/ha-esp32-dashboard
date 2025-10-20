@@ -42,6 +42,10 @@ esphome:
     board_build.arduino.memory_type: qio_opi
     board_build.flash_mode: dio
     board_upload.maximum_ram_size: 524288
+  on_boot:
+    - priority: 60
+      then:
+        - switch.turn_on: test_sw
 
 psram:
   mode: octal
@@ -430,6 +434,7 @@ script:
       - lvgl.widget.show: weather_card
       - lvgl.widget.show: meter_card
       - lvgl.widget.show: solar_card
+      - lvgl.widget.show: menu_card
       - script.execute: weather_img
       - lvgl.widget.hide: test_card
       
@@ -441,6 +446,7 @@ script:
       - lvgl.widget.hide: weather_card
       - lvgl.widget.hide: meter_card
       - lvgl.widget.hide: solar_card
+      - lvgl.widget.hide: menu_card
       - lvgl.widget.show: test_card
 
 
@@ -1091,7 +1097,23 @@ font:
           "\U000F010C",  # car-battery
           "\U000F1A74",  # solar-power-variant-outline
           "\U000F1A73",  # solar-power-variant
-          "\U000F1A78", # sun-clock-outline
+          "\U000F1A78",  # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
           ]   
   - file: "$font"
     id: weather_60
@@ -1107,7 +1129,23 @@ font:
           "\U000F058E",  # mdi:water-percent
           "\U000F0210",  # mdi:fan
           "\U000F0425",   # mdi:power
-          "\U000F1A78", # sun-clock-outline
+          "\U000F1A78",  # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
           ]
   - file: "$font"
     id: weather_30
@@ -2129,15 +2167,6 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 40
-                      align: CENTER
-                      text: "----"
-                      id: luxpower_lxp_pv_power_text4
-                      text_font: regular_40
-                      text_color: 0xE5E5E5
-                      text_align: CENTER
-                  - label:
-                      x: 0
                       y: 0
                       align: TOP_RIGHT
                       text: "\U000F1A73" # solar-power-variant
@@ -2173,7 +2202,7 @@ lvgl:
                       align: CENTER
                       scales:
                         - range_from: 0
-                          range_to: 100
+                          range_to: 10000
                           angle_range: 250
                           ticks:
                             count: 0
@@ -2189,25 +2218,34 @@ lvgl:
                                 r_mod: 10 
                                 width: 25
                                 start_value: 0
-                                end_value: 21
+                                end_value: 1000
                             - arc: 
                                 color: 0x02D109
                                 r_mod: 10
                                 width: 25
-                                start_value: 21
-                                end_value: 80
+                                start_value: 1000
+                                end_value: 4000
                             - arc: 
                                 color: 0x02d189
                                 r_mod: 10
                                 width: 25
-                                start_value: 80
-                                end_value: 90
+                                start_value: 4000
+                                end_value: 7000
                             - arc: 
                                 color: 0x0285D1
                                 r_mod: 10
                                 width: 25
-                                start_value: 90
-                                end_value: 100
+                                start_value: 7000
+                                end_value: 10000
+                  - label:
+                      x: 0
+                      y: 40
+                      align: CENTER
+                      text: "----"
+                      id: luxpower_lxp_pv_power_text4
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
 
 
 # grid import
@@ -2288,15 +2326,6 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 40
-                      align: CENTER
-                      text: "----"
-                      id: luxpower_lxp_battery_state_of_charge_text2
-                      text_font: regular_40
-                      text_color: 0xE5E5E5
-                      text_align: CENTER
-                  - label:
-                      x: 0
                       y: 0
                       align: TOP_RIGHT
                       text: "\U000F010C"  # car-battery
@@ -2348,13 +2377,22 @@ lvgl:
                                 width: 25
                                 start_value: 90
                                 end_value: 100
+                  - label:
+                      x: 0
+                      y: 40
+                      align: CENTER
+                      text: "----"
+                      id: luxpower_lxp_battery_state_of_charge_text2
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
 
-
+# NOW
             - button:
                 x: 0
                 y: 290
                 width: 156
-                height: 100
+                height: 105
                 styles: card_new
                 id: weather_now
                 pad_all: 10
@@ -2367,10 +2405,10 @@ lvgl:
                       text: "Now"
                       #id: home_weather_now
                       text_font: regular_20
-                      text_color: white_text_color
+                      text_color: active_value_text_color
                   - label:
                       x: 0
-                      y: 25
+                      y: 36
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
@@ -2388,7 +2426,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 50
+                      y: 55
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "\U000F059C --:--:--"
@@ -2398,7 +2436,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 68
+                      y: 73
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "--:--:-- \U000F059B"
@@ -2406,12 +2444,12 @@ lvgl:
                       recolor: true
                       text_font: regular_20
                       text_color: white_text_color
-
+#day 0
             - button:
                 x: 160
                 y: 290
                 width: 156
-                height: 100
+                height: 105
                 styles: card_new
                 id: weather_0
                 pad_all: 10
@@ -2424,10 +2462,10 @@ lvgl:
                       text: "---"
                       id: home_weather_0
                       text_font: regular_20
-                      text_color: white_text_color
+                      text_color: active_value_text_color
                   - label:
                       x: 0
-                      y: 25
+                      y: 36
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
@@ -2444,16 +2482,16 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 50
+                      y: 55
                       align: TOP_LEFT
                       text_align: LEFT
-                      text: "---"
+                      text: "\U000F14E4" # sunny-off
                       id: forecast_day_0_condition_icon
                       text_font: regular_40
                       text_color: white_text_color
                   - label:
                       x: -15
-                      y: 50
+                      y: 55
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
@@ -2462,7 +2500,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 70
+                      y: 75
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
@@ -2471,7 +2509,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 5
-                      y: 50
+                      y: 55
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "\U000F0E0A" # water-outline
@@ -2484,7 +2522,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---°"
-                      id: home_weather_max_0
+                      id: home_weather_max_day_0
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2501,15 +2539,15 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---°"
-                      id: home_weather_min_0
+                      id: home_weather_min_day_0
                       text_font: regular_20
                       text_color: white_text_color
-    
+#day 1    
             - button:
                 x: 320
                 y: 290
                 width: 156
-                height: 100
+                height: 105
                 styles: card_new
                 id: weather_1
                 pad_all: 10
@@ -2522,10 +2560,10 @@ lvgl:
                       text: "---"
                       id: home_weather_1
                       text_font: regular_20
-                      text_color: white_text_color
+                      text_color: active_value_text_color
                   - label:
                       x: 0
-                      y: 25
+                      y: 36
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
@@ -2534,10 +2572,10 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 50
+                      y: 55
                       align: TOP_LEFT
                       text_align: LEFT
-                      text: "---"
+                      text: "\U000F14E4" # sunny-off
                       id: forecast_day_1_condition_icon
                       text_font: regular_40
                       text_color: white_text_color
@@ -2551,7 +2589,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: -15
-                      y: 50
+                      y: 55
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
@@ -2560,7 +2598,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 70
+                      y: 75
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
@@ -2569,7 +2607,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 5
-                      y: 50
+                      y: 55
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "\U000F0E0A" # water-outline
@@ -2582,7 +2620,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---°"
-                      id: home_weather_max_1
+                      id: home_weather_max_day_1
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2599,9 +2637,109 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---°"
-                      id: home_weather_min_1
+                      id: home_weather_min_day_1
                       text_font: regular_20
-                      text_color: white_text_color    
+                      text_color: white_text_color
+
+#day 2
+            - button:
+                x: 320
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_2
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_2
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_day_2_condition_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_day_2_condition_icon
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: day_2_precipitation_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 75
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: day_2_precipitation_probability_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_2_precipitation_icon
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+
 ########################################################### END OF VLGL
 
 
