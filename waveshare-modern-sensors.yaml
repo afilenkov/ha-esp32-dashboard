@@ -1,0 +1,418 @@
+################################################################################
+# Sensors
+################################################################################
+sensor:
+  # WiFi
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    id: ${device_internal_name}_wifi_signal_sensor
+    update_interval: ${device_sampling_time}
+
+  # Uptime
+  - platform: uptime
+    name: "Uptime Sensor"
+    id: ${device_internal_name}_uptime_sensor
+    update_interval: ${device_sampling_time}
+    internal: true
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: ${device_internal_name}_uptime_human
+            state: !lambda |-
+              int seconds = round(id(${device_internal_name}_uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+
+# HA Energy Sensor
+  - platform: homeassistant
+    entity_id: sensor.luxpower_lxp_grid_power_ct
+    id: energy_meter_power
+    accuracy_decimals: 1          
+    on_value:
+      - lvgl.label.update:
+          id: energy_meter_power_title
+          text:
+            format: "\U000F192C %.0fW"
+            args: [ 'x' ]
+      #- lvgl.indicator.update:
+      #    id: grid_needle
+      #    value: !lambda return x * 10;
+      #- lvgl.label.update:
+      #    id: grid_in_text
+      #    text:
+      #      format: "%.1f"
+      #      args: [ 'x' ]
+  
+  ## Power usage
+  - platform: homeassistant
+    id: grid_import
+    entity_id: sensor.luxpower_lxp_grid_power
+    on_value:
+      - lvgl.label.update:
+          id: grid_power_text
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]            
+      - lvgl.label.update:
+          id: grid_power_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]            
+
+  - platform: homeassistant
+    id: house_load
+    entity_id: sensor.luxpower_lxp_load_power
+    on_value:
+      - lvgl.label.update:
+          id: house_load_text
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]            
+
+  - platform: homeassistant
+    id: luxpower_lxp_battery_state_of_charge
+    entity_id: sensor.luxpower_lxp_battery_state_of_charge
+    on_value:
+      - lvgl.indicator.update:
+          id: luxpower_lxp_battery_state_of_charge_needle
+          value: !lambda return x;
+      - lvgl.label.update:
+          id: luxpower_lxp_battery_state_of_charge_text
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: luxpower_lxp_pv_power
+    entity_id: sensor.luxpower_lxp_pv_power
+    on_value:
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text3
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.indicator.update:
+          id: luxpower_lxp_pv_power_needle
+          value: !lambda return x;
+
+
+  - platform: homeassistant
+    id: house_battery_power
+    entity_id: sensor.luxpower_lxp_battery_power
+    on_value:
+      - lvgl.label.update:
+          id: house_battery_power_text
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - if:
+                condition:
+                  - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state < 100;'
+                then:
+                  - lvgl.label.update:
+                     id: house_battery_power_text_icon
+                     text: "\U000F12A1" # battery-low
+                else:
+                  - lvgl.label.update:
+                      id: house_battery_power_text_icon
+                      text: "\U000F12A3" # battery-high
+      - if:
+          condition:
+            - lambda: 'return x < 0;'
+          then:
+            - lvgl.label.update:
+                id: house_battery_power_text_icon
+                text: "\U000F17DE" # battery-arrow-down
+      - if:
+          condition:
+            - lambda: 'return x > 0;'
+          then:
+            - lvgl.label.update:
+                id: house_battery_power_text_icon
+                text: "\U000F17E0" # battery-arrow-up
+
+  ## total solar power
+  - platform: homeassistant
+    id: total_solar_power_w
+    entity_id: sensor.daily_pv_energy
+    on_value:
+      - lvgl.label.update:
+          id: daily_luxpower_lxp_pv_power_text     
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]
+      - lvgl.label.update:
+          id: daily_luxpower_lxp_pv_power_text2
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: daily_grid_energy
+    entity_id: sensor.daily_energy_in
+    on_value:
+      - lvgl.label.update:
+          id: daily_grid_energy_text
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: daily_grid_energy_text2
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: daily_load_energy
+    entity_id: sensor.daily_load_energy
+    on_value:
+      - lvgl.label.update:
+          id: daily_load_energy_text
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    entity_id: sensor.home_realfeel_temperature
+    id: naver_weather_todayfeeltemp_1
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_now
+          text:
+            format: "%.1f°"
+            args: [ 'x' ]    
+
+  - platform: homeassistant
+    entity_id: sensor.home_realfeel_temperature_max_day_0
+    id: home_realfeel_temperature_max_day_0
+    accuracy_decimals: 1
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_minmax
+          text: 
+            format: "#47ACF5 %.1f°#|#FF0000 %.1f°#"
+            args: [ 'id(home_realfeel_temperature_min_day_0).state', 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_realfeel_temperature_min_day_0
+    id: home_realfeel_temperature_min_day_0
+
+  - platform: homeassistant
+    entity_id: sensor.home_humidity
+    id: home_humidity
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_hum
+          text: 
+            format: "#47ACF5 HUM# %.0f%% #02D109 %.1f m/s"
+            args: [ 'x', 'id(home_wind_speed_day_0).state']
+
+  - platform: homeassistant
+    entity_id: sensor.home_wind_speed_day_0
+    id: home_wind_speed_day_0
+
+  - platform: homeassistant
+    entity_id: sensor.home_precipitation
+    id: home_precipitation
+    on_value:
+      - if: 
+          condition:
+            - lambda: 'return x > 0;'
+          then:
+            - lvgl.label.update:
+                id: home_weather_rainystarttmr
+                text: 
+                  format: "\U000F054A percipitation (%.1f)"
+                  args: [ 'x' ]
+            - lvgl.widget.show: home_weather_rainystarttmr
+          else:
+            - lvgl.widget.hide: home_weather_rainystarttmr
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_0
+    id: home_hours_of_sun_day_0
+    on_value:
+      - lvgl.label.update:
+          id: hours_of_sun_today
+          text:
+            format: "%.1fh"
+            args: [ 'x' ]    
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_1
+    id: home_hours_of_sun_day_1
+    on_value:
+      - lvgl.label.update:
+          id: hours_of_sun_tomorrow
+          text:
+            format: "%.1fh"
+            args: [ 'x' ]    
+
+  ## Indoor temperature
+  - platform: homeassistant
+    id: indoor_temperature
+    entity_id: sensor.thermostat_temperature
+    on_value:
+      - lvgl.label.update:
+          id: indoor_temperature_text
+          text:
+            format: "%.1f °C"
+            args: [ 'x' ]
+
+  ## Outdoor temperature
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.thermostat_outdoor_temperature
+    on_value:
+      - lvgl.label.update:
+          id: outdoor_temperature_text
+          text:
+            format: "%.1f °C"
+            args: [ 'x' ]
+
+
+  - platform: homeassistant
+    id: yearly_pv_energy
+    entity_id: sensor.yearly_pv_energy
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: yearly_pv_energy_cost
+            state: !lambda |-
+              return x*0.171822;      
+
+  - platform: template
+    id: yearly_pv_energy_cost
+    on_value:
+      - lvgl.label.update:
+          id: yearly_pv_cost
+          text:
+            format: "$%.2f"
+            args: [ 'x' ]
+################################################################################
+# Text Sensors
+################################################################################
+text_sensor:
+  #-------------------------------------------------------------------------------
+  # ESP32 internal sensors
+  #-------------------------------------------------------------------------------
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      id: ${device_internal_name}_ip_address
+    ssid:
+      name: Connected SSID
+      id: ${device_internal_name}_connected_ssid
+    mac_address:
+      name: Mac Wifi Address
+      id: ${device_internal_name}_mac_address
+
+
+# sun rise/set
+  - platform: sun
+    name: Sun Rise
+    id: sun_rise
+    type: sunrise
+    internal: True
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunrise
+          text: 
+            format: "#FFA500 \U000F059C# %s"
+            args: [ x.c_str() ]
+            
+  - platform: sun
+    name: Sun set
+    id: sun_set
+    type: sunset
+    internal: True
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunset
+          text: 
+            format: "%s #FF0000 \U000F059B#  "
+            args: [ x.c_str() ]    
+
+  - platform: homeassistant
+    entity_id: weather.home
+    id: weather_home
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_text
+          text: 
+            format: "%s"
+            args: [ x.c_str() ]
+      - script.execute: weather_img
+
+  - platform: template
+    id: daylight_duration
+    update_interval: 60s
+    lambda: |-
+      std::string  sunrise = id(sun_rise).state.c_str();
+      std::string  sunset = id(sun_set).state.c_str();
+      if (sunrise.length() < 8) {
+        std::string r = "sunrise";
+        return r;
+      }
+      if (sunset.length() < 8) {
+        std::string r = "sunset";
+        return r;
+      }
+      std::string hh = sunrise.substr(0, 2);
+      std::string mm = sunrise.substr(3, 2);
+      std::string ss = sunrise.substr(6, 2);
+      auto iSunrise = atoi(hh.c_str())*3600+atoi(mm.c_str())*60+atoi(ss.c_str());
+
+      hh = sunset.substr(0, 2);
+      mm = sunset.substr(3, 2);
+      ss = sunset.substr(6, 2);
+      auto iSunset = atoi(hh.c_str())*3600+atoi(mm.c_str())*60+atoi(ss.c_str());
+
+      int total_seconds = iSunset - iSunrise;
+      int hours = (total_seconds % 86400) / 3600;
+      int minutes = ((total_seconds % 86400) % 3600) / 60;
+      int seconds = ((total_seconds % 86400) % 3600) % 60;    
+      return {str_sprintf("%02d:%02d:%02d", hours, minutes, seconds)};   
+      
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_duration
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+
+  #-------------------------------------------------------------------------------
+  # Custom Text sensors
+  #-------------------------------------------------------------------------------
+  - platform: template
+    name: Uptime Human Readable
+    id: ${device_internal_name}_uptime_human
+    icon: mdi:clock-start
+
+  - platform: template
+    name: RTC
+    id: label_clock
