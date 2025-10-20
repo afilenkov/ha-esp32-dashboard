@@ -2145,8 +2145,8 @@ lvgl:
                       text_color: 0xE5E5E5
                       text_align: CENTER
                   - label:
-                      x: -9
-                      y: 0
+                      x: -10
+                      y: 5
                       align: BOTTOM_LEFT
                       text_align: LEFT
                       text: "\U000F059C --:--:--"
@@ -2155,8 +2155,8 @@ lvgl:
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
-                      x: 9
-                      y: 0
+                      x: 20
+                      y: 5
                       align: BOTTOM_RIGHT
                       text_align: LEFT
                       text: "--:--:-- \U000F059B"

@@ -449,7 +449,7 @@ sensor:
           id: home_weather_max_1
           text: 
             format: "%.1f°"
-            args: [ '(id(day_1_temperature_hi).state-32.0)*5.0/9.0' ]
+            args: [ 'x' ]    
 
   - platform: homeassistant
     id: day_1_temperature_low
@@ -459,7 +459,7 @@ sensor:
           id: home_weather_min_1
           text: 
             format: "%.1f°"
-            args: [ '(id(day_1_temperature_low).state-32.0)*5.0/9.0' ]
+            args: [ 'x' ]    
 
   - platform: homeassistant
     id: day_1_precipitation
@@ -469,7 +469,8 @@ sensor:
           id: day_1_precipitation_text
           text: 
             format: "%.1fmm"
-            args: [ 'id(day_0_precipitation).state*25.4' ]
+            args: [ 'id(day_1_precipitation).state*25.4' ]
+
   - platform: homeassistant
     id: day_1_precipitation_probability
     entity_id: sensor.day_1_precipitation_probability
@@ -479,6 +480,7 @@ sensor:
           text:
             format: "%.0f%%"
             args: [ 'x' ]
+            
   - platform: homeassistant
     entity_id: sensor.home_hours_of_sun_day_1
     id: home_hours_of_sun_day_1
