@@ -185,6 +185,15 @@ script:
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             snprintf(date_buf, sizeof(date_buf), "%04d-%02d-%02d (%s)", now.year, now.month, now.day_of_month, weekdays[now.day_of_week - 1]);
             return date_buf;
+      - lvgl.label.update:
+          id: home_weather_0
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            return weekdays[now.day_of_week - 1];
+
+
 
 
   - id: weather_img
@@ -266,7 +275,6 @@ script:
             - lvgl.image.update:
                 id: home_weather_icon
                 src: snowy
-
       - if:
           condition:
             or:
@@ -277,6 +285,135 @@ script:
             - lvgl.image.update:
                 id: home_weather_icon
                 src: lightning  
+
+  - id: battery_update
+    then:
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=0;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <10;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F007A" # battery-10
+
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=10;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <20;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F007B" # battery-20
+
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=20;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <30;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F007C" # battery-30
+          
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=30;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <40;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F007D" # battery-40
+          
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=40;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <50;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F007E" # battery-50
+
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=50;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <60;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F007F" # battery-60
+
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=60;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <70;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F0080" # battery-70
+          
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=70;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <80;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F0081" # battery-80
+          
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=80;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <90;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F0082" # battery-90
+          
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=90;'
+              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <110;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon1
+                 text: "\U000F0079" # battery-100
+          
+      - if:
+          condition:
+              - lambda: 'return id(house_battery_power).state == 0;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon2
+                 text: "\U000F0534" # trending-neutral
+      - if:
+          condition:
+              - lambda: 'return id(house_battery_power).state > 0;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon2
+                 text: "\U000F0535" # trending-up
+      - if:
+          condition:
+              - lambda: 'return id(house_battery_power).state < 0;'
+          then:
+              - lvgl.label.update:
+                 id: house_battery_power_text_icon2
+                 text: "\U000F0533" # trending-down
+
+          
+          
+          
+
 
 # weather on/off
   - id: show_weather
@@ -559,6 +696,21 @@ font:
           "\U000F0534", # trending-neutral
           "\U000F1903", # home-lightning-bolt
           "\U000F1A78", # sun-clock-outline
+          "\U000F17DE", # battery-arrow-down
+          "\U000F17E0", # battery-arrow-up
+          "\U000F12A1", # battery-low
+          "\U000F12A3", # battery-high
+          "\U000F0091", # battery-unknown
+          "\U000F007A", # battery-10
+          "\U000F007B", # battery-20
+          "\U000F007C", # battery-30
+          "\U000F007D", # battery-40
+          "\U000F007E", # battery-50
+          "\U000F007F", # battery-60
+          "\U000F0080", # battery-70
+          "\U000F0081", # battery-80
+          "\U000F0082", # battery-90
+          "\U000F0079", # battery-100
           ]
 
   - file: "fonts/RobotoCondensed-Regular.ttf"
@@ -676,6 +828,11 @@ font:
           "\U000F0534", # trending-neutral
           "\U000F1903", # home-lightning-bolt
           "\U000F1A78", # sun-clock-outline
+          "\U000F17DE", # battery-arrow-down
+          "\U000F17E0", # battery-arrow-up
+          "\U000F12A1", # battery-low
+          "\U000F12A3", # battery-high
+          "\U000F0091", # battery-unknown
           ]
 
   - file: "fonts/materialdesignicons-webfont.ttf"
@@ -723,6 +880,11 @@ font:
       "\U000F0534", # trending-neutral
       "\U000F1903", # home-lightning-bolt
       "\U000F1A78", # sun-clock-outline
+      "\U000F17DE", # battery-arrow-down
+      "\U000F17E0", # battery-arrow-up
+      "\U000F12A1", # battery-low
+      "\U000F12A3", # battery-high
+      "\U000F0091", # battery-unknown
       ]
   
   - file: "$font"
@@ -744,6 +906,8 @@ font:
           "\U000F1A78", # sun-clock-outline
           "\U000F0F55", # home-thermometer-outline
           "\U000F18D6", # sun-thermometer
+          "\U000F19B2", # arrow-up-thin
+          "\U000F19B3", # arrow-down-thin
           ]  
 
   - file: "$font"
@@ -817,7 +981,8 @@ font:
           "\U000F010C",  # car-battery
           "\U000F1A74",  # solar-power-variant-outline
           "\U000F1A73",  # solar-power-variant
-          "\U000F1A78", # sun-clock-outline
+          "\U000F0A72",  # solar-power
+          "\U000F1A78",  # sun-clock-outline
           ]   
   - file: "$font"
     id: regular_50
@@ -1686,10 +1851,11 @@ lvgl:
             id: test_card
             hidden: true
             widgets:
+#solar
             - button:
                 x: 0
                 y: 0
-                width: 250
+                width: 262
                 height: 140
                 styles: card_new
                 id: import_card2
@@ -1719,7 +1885,7 @@ lvgl:
                     align: TOP_LEFT
                     text_align: CENTER
                     text: "\U000F1A74" # solar-power-variant-outline 
-                    #id: luxpower_lxp_pv_power_text3
+                    id: luxpower_lxp_pv_power_icon3
                     text_font: roboto_80
                     text_color: active_value_text_color
                  - label:
@@ -1742,11 +1908,218 @@ lvgl:
                     text_font: regular_30
                     #text_color: not_active_text    
                     text_color: white_text_color
-
+#House load
+            - button:
+                x: 268
+                y: 0
+                width: 262
+                height: 140
+                styles: card_new
+                id: house_load_card2
+                pad_all: 10
+                widgets:
+                 - label:
+                    x: 0
+                    y: 0
+                    align: TOP_LEFT
+                    text_align: LEFT
+                    text: "Load"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: -9
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "----W"
+                    id: house_load_text2
+                    text_font: regular_50
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 37
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F1903" #home-lightning-bolt
+                    #id: luxpower_lxp_pv_power_text3
+                    text_font: roboto_80
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 60
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "today"
+                    #id: luxpower_lxp_pv_power_text22
+                    text_font: regular_25
+                    #text_color: not_active_text
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: 90
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "---KWh"
+                    id: daily_load_energy_text2
+                    text_font: regular_30
+                    #text_color: not_active_text    
+                    text_color: white_text_color
+# battery
+            - button:
+                x: 536
+                y: 0
+                width: 262
+                height: 140
+                styles: card_new
+                id: battery_card2
+                pad_all: 10
+                widgets:
+                 - label:
+                    x: 0
+                    y: 0
+                    align: TOP_LEFT
+                    text_align: LEFT
+                    text: "Battery"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: -9
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "----W"
+                    id: house_battery_power_text2
+                    text_font: regular_50
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 37
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F0091" # battery-unknown
+                    id: house_battery_power_text_icon1
+                    text_font: roboto_80
+                    text_color: active_value_text_color
+                 - label:
+                    x: 60
+                    y: 55
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F0534" # trending-neutral
+                    id: house_battery_power_text_icon2
+                    text_font: roboto_56
+                    text_color: active_value_text_color
+                    
+                 - label:
+                    x: 0
+                    y: 60
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "this year"
+                    #id: luxpower_lxp_pv_power_text22
+                    text_font: regular_25
+                    #text_color: not_active_text
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: 90
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "$---"
+                    id: yearly_pv_cost2
+                    text_font: regular_30
+                    #text_color: not_active_text    
+                    text_color: white_text_color
+#solar gauge
             - button:
                 x: 0
                 y: 145
-                width: 250
+                width: 262
+                height: 140
+                styles: card_new
+                id: solar_pv_info
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F0A72"  # solar-power
+                      #id: luxpower_lxp_pv_power_text2
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 40
+                      align: CENTER
+                      text: "----"
+                      id: luxpower_lxp_pv_power_text4
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_RIGHT
+                      text: "\U000F1A73" # solar-power-variant
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER    
+                  - meter:
+                      x: 0
+                      y: 5
+                      width: 145
+                      height: 145
+                      border_width: 0
+                      bg_opa: TRANSP
+                      align: CENTER
+                      scales:
+                        - range_from: 0
+                          range_to: 100
+                          angle_range: 250
+                          ticks:
+                            count: 0
+                          indicators:
+                            - line:
+                                id: luxpower_lxp_pv_power_needle2
+                                width: 5
+                                color: 0xE5E5E5
+                                r_mod: 13
+                                value: "0"
+                            - arc: 
+                                color: 0xE86E02
+                                r_mod: 10 
+                                width: 25
+                                start_value: 0
+                                end_value: 21
+                            - arc: 
+                                color: 0x02D109
+                                r_mod: 10
+                                width: 25
+                                start_value: 21
+                                end_value: 80
+                            - arc: 
+                                color: 0x02d189
+                                r_mod: 10
+                                width: 25
+                                start_value: 80
+                                end_value: 90
+                            - arc: 
+                                color: 0x0285D1
+                                r_mod: 10
+                                width: 25
+                                start_value: 90
+                                end_value: 100
+
+
+# grid import
+            - button:
+                x: 268
+                y: 145
+                width: 262
                 height: 140
                 styles: card_new
                 id: import_card
@@ -1776,7 +2149,7 @@ lvgl:
                     align: TOP_LEFT
                     text_align: CENTER
                     text: "\U000F192C" # transmission-tower-export                    
-                    #id: luxpower_lxp_pv_power_text2
+                    id: grid_power_icon2
                     text_font: roboto_80
                     text_color: active_value_text_color
                  - label:
@@ -1799,7 +2172,269 @@ lvgl:
                     text_font: regular_30
                     #text_color: not_active_text
                     text_color: white_text_color
+#battery gauge
+            - button:
+                x: 536
+                y: 145
+                width: 262
+                height: 140
+                styles: card_new
+                id: battery_info
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F010C"  # car-battery
+                      #id: luxpower_lxp_pv_power_text2
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 40
+                      align: CENTER
+                      text: "----"
+                      id: luxpower_lxp_battery_state_of_charge_text2
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_RIGHT
+                      text: "\U000F010C"  # car-battery
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER    
+                  - meter:
+                      x: 0
+                      y: 5
+                      width: 145
+                      height: 145
+                      border_width: 0
+                      bg_opa: TRANSP
+                      align: CENTER
+                      scales:
+                        - range_from: 0
+                          range_to: 100
+                          angle_range: 250
+                          ticks:
+                            count: 0
+                          indicators:
+                            - line:
+                                id: luxpower_lxp_battery_state_of_charge_needle2
+                                width: 5
+                                color: 0xE5E5E5
+                                r_mod: 13
+                                value: "0"
+                            - arc: 
+                                color: 0xE86E02
+                                r_mod: 10 
+                                width: 25
+                                start_value: 0
+                                end_value: 21
+                            - arc: 
+                                color: 0x02D109
+                                r_mod: 10
+                                width: 25
+                                start_value: 21
+                                end_value: 80
+                            - arc: 
+                                color: 0x02d189
+                                r_mod: 10
+                                width: 25
+                                start_value: 80
+                                end_value: 90
+                            - arc: 
+                                color: 0x0285D1
+                                r_mod: 10
+                                width: 25
+                                start_value: 90
+                                end_value: 100
 
+
+            - button:
+                x: 0
+                y: 290
+                width: 156
+                height: 100
+                styles: card_new
+                id: weather_now
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "Now"
+                      #id: home_weather_now
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 25
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_text2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: outdoor_temperature_text2
+                      text_font: regular_25
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 45
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F059C --:--:--"
+                      id: home_weather_sunrise2
+                      recolor: true
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "--:--:-- \U000F059B"
+                      id: home_weather_sunset2
+                      recolor: true
+                      text_font: regular_20
+                      text_color: white_text_color
+
+            - button:
+                x: 160
+                y: 290
+                width: 156
+                height: 100
+                styles: card_new
+                id: weather_0
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_0
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 25
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_day_0_condition_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_0
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_0
+                      text_font: regular_20
+                      text_color: white_text_color
+    
+            - button:
+                x: 320
+                y: 290
+                width: 156
+                height: 100
+                styles: card_new
+                id: weather_1
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_1
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 25
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_day_1_condition_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_1
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_1
+                      text_font: regular_20
+                      text_color: white_text_color    
 ########################################################### END OF VLGL
 
 

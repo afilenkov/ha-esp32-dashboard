@@ -62,12 +62,30 @@ sensor:
           id: grid_power_text
           text:
             format: "%.0fW"
-            args: [ 'x' ]            
+            args: [ 'x' ]
       - lvgl.label.update:
           id: grid_power_text2
           text:
             format: "%.0fW"
-            args: [ 'x' ]            
+            args: [ 'x' ]
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: grid_power_text2
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: grid_power_icon2
+                text_color: not_active_text
+          else:
+            - lvgl.label.update:
+                id: grid_power_text2
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: grid_power_icon2
+                text_color: active_value_text_color
+
 
   - platform: homeassistant
     id: house_load
@@ -75,6 +93,11 @@ sensor:
     on_value:
       - lvgl.label.update:
           id: house_load_text
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]            
+      - lvgl.label.update:
+          id: house_load_text2
           text:
             format: "%.0fW"
             args: [ 'x' ]            
@@ -86,8 +109,16 @@ sensor:
       - lvgl.indicator.update:
           id: luxpower_lxp_battery_state_of_charge_needle
           value: !lambda return x;
+      - lvgl.indicator.update:
+          id: luxpower_lxp_battery_state_of_charge_needle2
+          value: !lambda return x;
       - lvgl.label.update:
           id: luxpower_lxp_battery_state_of_charge_text
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: luxpower_lxp_battery_state_of_charge_text2
           text:
             format: "%.0f%%"
             args: [ 'x' ]  
@@ -111,17 +142,51 @@ sensor:
           text:
             format: "%.0fW"
             args: [ 'x' ]  
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text4
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+
       - lvgl.indicator.update:
           id: luxpower_lxp_pv_power_needle
           value: !lambda return x;
+      - lvgl.indicator.update:
+          id: luxpower_lxp_pv_power_needle2
+          value: !lambda return x;
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_text3
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_icon3
+                text_color: not_active_text
+          else:
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_text3
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_icon3
+                text_color: active_value_text_color
+
+
 
 
   - platform: homeassistant
     id: house_battery_power
     entity_id: sensor.luxpower_lxp_battery_power
     on_value:
+      - script.execute: battery_update
       - lvgl.label.update:
           id: house_battery_power_text
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: house_battery_power_text2
           text:
             format: "%.0fW"
             args: [ 'x' ]  
@@ -129,6 +194,13 @@ sensor:
           condition:
             - lambda: 'return x == 0;'
           then:
+            - lvgl.label.update:
+                id: house_battery_power_text2
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: house_battery_power_text_icon1
+                text_color: not_active_text
+
             - if:
                 condition:
                   - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state < 100;'
@@ -140,6 +212,14 @@ sensor:
                   - lvgl.label.update:
                       id: house_battery_power_text_icon
                       text: "\U000F12A3" # battery-high
+          else:
+            - lvgl.label.update:
+                id: house_battery_power_text2
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: house_battery_power_text_icon1
+                text_color: active_value_text_color
+
       - if:
           condition:
             - lambda: 'return x < 0;'
@@ -178,12 +258,12 @@ sensor:
       - lvgl.label.update:
           id: daily_grid_energy_text
           text:
-            format: "%.2fKWh"
+            format: "%.1fKWh"
             args: [ 'x' ]  
       - lvgl.label.update:
           id: daily_grid_energy_text2
           text:
-            format: "%.2fKWh"
+            format: "%.1fKWh"
             args: [ 'x' ]  
 
   - platform: homeassistant
@@ -193,7 +273,12 @@ sensor:
       - lvgl.label.update:
           id: daily_load_energy_text
           text:
-            format: "%.2fKWh"
+            format: "%.1fKWh"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: daily_load_energy_text2
+          text:
+            format: "%.1fKWh"
             args: [ 'x' ]  
 
   - platform: homeassistant
@@ -293,7 +378,11 @@ sensor:
           text:
             format: "%.1f °C"
             args: [ 'x' ]
-
+      - lvgl.label.update:
+          id: outdoor_temperature_text2
+          text:
+            format: "%.1f °C"
+            args: [ 'x' ]
 
   - platform: homeassistant
     id: yearly_pv_energy
@@ -313,6 +402,100 @@ sensor:
           text:
             format: "$%.2f"
             args: [ 'x' ]
+      - lvgl.label.update:
+          id: yearly_pv_cost2
+          text:
+            format: "$%.2f"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: day_0_temperature_hi
+    entity_id: sensor.day_0_temperature_hi
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_0
+          text: 
+            format: "%.1f°"
+            args: [ '(id(day_0_temperature_hi).state-32.0)*5.0/9.0' ]
+
+  - platform: homeassistant
+    id: day_0_temperature_low
+    entity_id: sensor.day_0_temperature_low
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_0
+          text: 
+            format: "%.1f°"
+            args: [ '(id(day_0_temperature_low).state-32.0)*5.0/9.0' ]
+
+  - platform: homeassistant
+    id: day_0_precipitation
+    entity_id: sensor.day_0_precipitation
+
+  - platform: homeassistant
+    id: day_0_precipitation_probability
+    entity_id: sensor.day_0_precipitation_probability
+
+  - platform: homeassistant
+    id: day_1_temperature_hi
+    entity_id: sensor.day_1_temperature_hi
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_1
+          text: 
+            format: "%.1f°"
+            args: [ '(id(day_1_temperature_hi).state-32.0)*5.0/9.0' ]
+
+  - platform: homeassistant
+    id: day_1_temperature_low
+    entity_id: sensor.day_1_temperature_low
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_1
+          text: 
+            format: "%.1f°"
+            args: [ '(id(day_1_temperature_low).state-32.0)*5.0/9.0' ]
+
+  - platform: homeassistant
+    id: day_1_precipitation
+    entity_id: sensor.day_1_precipitation
+
+  - platform: homeassistant
+    id: day_1_precipitation_probability
+    entity_id: sensor.day_1_precipitation_probability
+
+  - platform: homeassistant
+    id: day_2_temperature_hi
+    entity_id: sensor.day_2_temperature_hi
+
+  - platform: homeassistant
+    id: day_2_temperature_low
+    entity_id: sensor.day_2_temperature_low
+
+  - platform: homeassistant
+    id: day_2_precipitation
+    entity_id: sensor.day_2_precipitation
+
+  - platform: homeassistant
+    id: day_2_precipitation_probability
+    entity_id: sensor.day_2_precipitation_probability
+
+  - platform: homeassistant
+    id: day_3_temperature_hi
+    entity_id: sensor.day_3_temperature_hi
+
+  - platform: homeassistant
+    id: day_3_temperature_low
+    entity_id: sensor.day_3_temperature_low
+
+  - platform: homeassistant
+    id: day_3_precipitation
+    entity_id: sensor.day_3_precipitation
+
+  - platform: homeassistant
+    id: day_3_precipitation_probability
+    entity_id: sensor.day_3_precipitation_probability
+
 ################################################################################
 # Text Sensors
 ################################################################################
@@ -344,6 +527,11 @@ text_sensor:
           text: 
             format: "#FFA500 \U000F059C# %s"
             args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: home_weather_sunrise2
+          text: 
+            format: "#FFA500 \U000F059C# %s"
+            args: [ x.c_str() ]
             
   - platform: sun
     name: Sun set
@@ -355,7 +543,12 @@ text_sensor:
           id: home_weather_sunset
           text: 
             format: "%s #FF0000 \U000F059B#  "
-            args: [ x.c_str() ]    
+            args: [ x.c_str() ] 
+      - lvgl.label.update:
+          id: home_weather_sunset2
+          text: 
+            format: "%s #FF0000 \U000F059B#  "
+            args: [ x.c_str() ] 
 
   - platform: homeassistant
     entity_id: weather.home
@@ -363,6 +556,11 @@ text_sensor:
     on_value:
       - lvgl.label.update:
           id: home_weather_text
+          text: 
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: home_weather_text2
           text: 
             format: "%s"
             args: [ x.c_str() ]
@@ -404,6 +602,34 @@ text_sensor:
           text:
             format: "%s"
             args: [ x.c_str() ]
+
+  - platform: homeassistant
+    entity_id: sensor.day_0_condition
+    id: forecast_day_0_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_day_0_condition_text
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+
+  - platform: homeassistant
+    entity_id: sensor.day_1_condition
+    id: forecast_day_1_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_day_1_condition_text
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+
+  - platform: homeassistant
+    entity_id: sensor.day_2_condition
+    id: forecast_day_2_condition
+
+  - platform: homeassistant
+    entity_id: sensor.day_3_condition
+    id: forecast_day_3_condition
 
   #-------------------------------------------------------------------------------
   # Custom Text sensors
