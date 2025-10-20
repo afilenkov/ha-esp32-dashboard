@@ -337,25 +337,6 @@ sensor:
           else:
             - lvgl.widget.hide: home_weather_rainystarttmr
 
-  - platform: homeassistant
-    entity_id: sensor.home_hours_of_sun_day_0
-    id: home_hours_of_sun_day_0
-    on_value:
-      - lvgl.label.update:
-          id: hours_of_sun_today
-          text:
-            format: "%.1fh"
-            args: [ 'x' ]    
-
-  - platform: homeassistant
-    entity_id: sensor.home_hours_of_sun_day_1
-    id: home_hours_of_sun_day_1
-    on_value:
-      - lvgl.label.update:
-          id: hours_of_sun_tomorrow
-          text:
-            format: "%.1fh"
-            args: [ 'x' ]    
 
   ## Indoor temperature
   - platform: homeassistant
@@ -416,7 +397,7 @@ sensor:
           id: home_weather_max_0
           text: 
             format: "%.1f°"
-            args: [ '(id(day_0_temperature_hi).state-32.0)*5.0/9.0' ]
+            args: [ 'x' ]
 
   - platform: homeassistant
     id: day_0_temperature_low
@@ -426,16 +407,40 @@ sensor:
           id: home_weather_min_0
           text: 
             format: "%.1f°"
-            args: [ '(id(day_0_temperature_low).state-32.0)*5.0/9.0' ]
+            args: [ 'x' ]
 
   - platform: homeassistant
     id: day_0_precipitation
     entity_id: sensor.day_0_precipitation
+    on_value:
+      - lvgl.label.update:
+          id: day_0_precipitation_text
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(day_0_precipitation).state*25.4' ]
+
 
   - platform: homeassistant
     id: day_0_precipitation_probability
     entity_id: sensor.day_0_precipitation_probability
+    on_value:
+      - lvgl.label.update:
+          id: day_0_precipitation_probability_text
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
 
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_0
+    id: home_hours_of_sun_day_0
+    on_value:
+      - lvgl.label.update:
+          id: hours_of_sun_today
+          text:
+            format: "%.1fh"
+            args: [ 'x' ]    
+
+#day 1
   - platform: homeassistant
     id: day_1_temperature_hi
     entity_id: sensor.day_1_temperature_hi
@@ -459,10 +464,31 @@ sensor:
   - platform: homeassistant
     id: day_1_precipitation
     entity_id: sensor.day_1_precipitation
-
+    on_value:
+      - lvgl.label.update:
+          id: day_1_precipitation_text
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(day_0_precipitation).state*25.4' ]
   - platform: homeassistant
     id: day_1_precipitation_probability
     entity_id: sensor.day_1_precipitation_probability
+    on_value:
+      - lvgl.label.update:
+          id: day_1_precipitation_probability_text
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_1
+    id: home_hours_of_sun_day_1
+    on_value:
+      - lvgl.label.update:
+          id: hours_of_sun_tomorrow
+          text:
+            format: "%.1fh"
+            args: [ 'x' ]    
+#day 2
 
   - platform: homeassistant
     id: day_2_temperature_hi
@@ -481,6 +507,11 @@ sensor:
     entity_id: sensor.day_2_precipitation_probability
 
   - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_2
+    id: home_hours_of_sun_day_2
+#day 3
+
+  - platform: homeassistant
     id: day_3_temperature_hi
     entity_id: sensor.day_3_temperature_hi
 
@@ -495,6 +526,11 @@ sensor:
   - platform: homeassistant
     id: day_3_precipitation_probability
     entity_id: sensor.day_3_precipitation_probability
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_3
+    id: home_hours_of_sun_day_3
+
 
 ################################################################################
 # Text Sensors
@@ -603,6 +639,45 @@ text_sensor:
             format: "%s"
             args: [ x.c_str() ]
 
+  - platform: template
+    id: sun_rise_short
+    update_interval: 60s
+    lambda: |-
+      std::string  sunrise = id(sun_rise).state.c_str();
+      if (sunrise.length() < 8) {
+        std::string r = "sunrise";
+        return r;
+      }
+      std::string hh = sunrise.substr(0, 2);
+      std::string mm = sunrise.substr(3, 2);
+      return {str_sprintf("%02d:%02d", atoi(hh.c_str()), atoi(mm.c_str()))};   
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunrise3
+          text:
+            format: "#FFA500 \U000F059C# %s"
+            args: [ x.c_str() ]
+
+  - platform: template
+    id: sun_set_short
+    update_interval: 60s
+    lambda: |-
+      std::string  sunset = id(sun_set).state.c_str();
+      if (sunset.length() < 8) {
+        std::string r = "sunset";
+        return r;
+      }
+      std::string hh = sunset.substr(0, 2);
+      std::string mm = sunset.substr(3, 2);
+      return {str_sprintf("%02d:%02d", atoi(hh.c_str()), atoi(mm.c_str()))};   
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunset3
+          text:
+            format: "%s #FF0000 \U000F059B#  "
+            args: [ x.c_str() ]
+
+
   - platform: homeassistant
     entity_id: sensor.day_0_condition
     id: forecast_day_0_condition
@@ -612,6 +687,13 @@ text_sensor:
           text:
             format: "%s"
             args: [ x.c_str() ]
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_0_condition).state == "rainy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_day_0_condition_icon
+                text: "\U000F0597" # rainy
 
   - platform: homeassistant
     entity_id: sensor.day_1_condition
@@ -622,6 +704,13 @@ text_sensor:
           text:
             format: "%s"
             args: [ x.c_str() ]
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_1_condition).state == "rainy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_day_1_condition_icon
+                text: "\U000F0597" # rainy
 
   - platform: homeassistant
     entity_id: sensor.day_2_condition

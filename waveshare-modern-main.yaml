@@ -192,6 +192,15 @@ script:
             auto now = id(time_comp).now();
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             return weekdays[now.day_of_week - 1];
+      - lvgl.label.update:
+          id: home_weather_1
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            auto next =now.day_of_week + 0;
+            if (next>6) {next=next-6;};
+            return weekdays[next];
 
 
 
@@ -908,6 +917,23 @@ font:
           "\U000F18D6", # sun-thermometer
           "\U000F19B2", # arrow-up-thin
           "\U000F19B3", # arrow-down-thin
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          "\U000F0E0A", # water-outline
           ]  
 
   - file: "$font"
@@ -929,6 +955,24 @@ font:
           "\U000F1472",  # mdi:fan-speed-1
           "\U000F0425",   # mdi:power
           "\U000F1A78", # sun-clock-outline
+          "\U000F19B2", # arrow-up-thin
+          "\U000F19B3", # arrow-down-thin
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
           ]   
   - file: "$font"
     id: regular_30
@@ -949,6 +993,22 @@ font:
           "\U000F1472",  # mdi:fan-speed-1
           "\U000F0425",   # mdi:power
           "\U000F1A78", # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
           ]   
   - file: "$font"
     id: regular_40
@@ -983,6 +1043,22 @@ font:
           "\U000F1A73",  # solar-power-variant
           "\U000F0A72",  # solar-power
           "\U000F1A78",  # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
           ]   
   - file: "$font"
     id: regular_50
@@ -2067,7 +2143,26 @@ lvgl:
                       text: "\U000F1A73" # solar-power-variant
                       text_font: regular_40
                       text_color: 0xE5E5E5
-                      text_align: CENTER    
+                      text_align: CENTER
+                  - label:
+                      x: -9
+                      y: 0
+                      align: BOTTOM_LEFT
+                      text_align: LEFT
+                      text: "\U000F059C --:--:--"
+                      id: home_weather_sunrise3
+                      recolor: true
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 9
+                      y: 0
+                      align: BOTTOM_RIGHT
+                      text_align: LEFT
+                      text: "--:--:-- \U000F059B"
+                      id: home_weather_sunset3
+                      recolor: true
+                      text_font: regular_20
                   - meter:
                       x: 0
                       y: 5
@@ -2293,7 +2388,7 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 45
+                      y: 50
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "\U000F059C --:--:--"
@@ -2303,8 +2398,8 @@ lvgl:
                       text_color: white_text_color
                   - label:
                       x: 0
-                      y: 55
-                      align: TOP_LEFT
+                      y: 68
+                      align: TOP_RIGHT
                       text_align: LEFT
                       text: "--:--:-- \U000F059B"
                       id: home_weather_sunset2
@@ -2345,6 +2440,42 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 50
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_day_0_condition_icon
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 50
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: day_0_precipitation_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 70
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: day_0_precipitation_probability_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 50
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_0_precipitation_icon
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2402,11 +2533,47 @@ lvgl:
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
+                      x: 0
+                      y: 50
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_day_1_condition_icon
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
                       x: 5
                       y: 0
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 50
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: day_1_precipitation_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 70
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: day_1_precipitation_probability_text
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 50
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_1_precipitation_icon
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
