@@ -390,8 +390,8 @@ sensor:
             args: [ 'x' ]
 
   - platform: homeassistant
-    id: day_0_temperature_hi
-    entity_id: sensor.day_0_temperature_hi
+    id: temperature_hi_day_0
+    entity_id: sensor.temperature_hi_day_0
     on_value:
       - lvgl.label.update:
           id: home_weather_max_day_0
@@ -400,8 +400,8 @@ sensor:
             args: [ 'x' ]
 
   - platform: homeassistant
-    id: day_0_temperature_low
-    entity_id: sensor.day_0_temperature_low
+    id: temperature_low_day_0
+    entity_id: sensor.temperature_low_day_0
     on_value:
       - lvgl.label.update:
           id: home_weather_min_day_0
@@ -410,22 +410,22 @@ sensor:
             args: [ 'x' ]
 
   - platform: homeassistant
-    id: day_0_precipitation
-    entity_id: sensor.day_0_precipitation
+    id: precipitation_day_0
+    entity_id: sensor.precipitation_day_0
     on_value:
       - lvgl.label.update:
-          id: day_0_precipitation_text
+          id: precipitation_text_day_0
           text: 
             format: "%.1fmm"
-            args: [ 'id(day_0_precipitation).state*25.4' ]
+            args: [ 'id(precipitation_day_0).state*25.4' ]
 
 
   - platform: homeassistant
-    id: day_0_precipitation_probability
-    entity_id: sensor.day_0_precipitation_probability
+    id: precipitation_probability_day_0
+    entity_id: sensor.precipitation_probability_day_0
     on_value:
       - lvgl.label.update:
-          id: day_0_precipitation_probability_text
+          id: precipitation_probability_text_day_0
           text:
             format: "%.0f%%"
             args: [ 'x' ]
@@ -442,8 +442,8 @@ sensor:
 
 #day 1
   - platform: homeassistant
-    id: day_1_temperature_hi
-    entity_id: sensor.day_1_temperature_hi
+    id: temperature_hi_day_1
+    entity_id: sensor.temperature_hi_day_1
     on_value:
       - lvgl.label.update:
           id: home_weather_max_day_1
@@ -452,8 +452,8 @@ sensor:
             args: [ 'x' ]  
 
   - platform: homeassistant
-    id: day_1_temperature_low
-    entity_id: sensor.day_1_temperature_low
+    id: temperature_low_day_1
+    entity_id: sensor.temperature_low_day_1
     on_value:
       - lvgl.label.update:
           id: home_weather_min_day_1
@@ -462,21 +462,21 @@ sensor:
             args: [ 'x' ]
 
   - platform: homeassistant
-    id: day_1_precipitation
-    entity_id: sensor.day_1_precipitation
+    id: precipitation_day_1
+    entity_id: sensor.precipitation_day_1
     on_value:
       - lvgl.label.update:
-          id: day_1_precipitation_text
+          id: precipitation_text_day_1
           text: 
             format: "%.1fmm"
-            args: [ 'id(day_1_precipitation).state*25.4' ]
+            args: [ 'id(precipitation_day_1).state*25.4' ]
 
   - platform: homeassistant
-    id: day_1_precipitation_probability
-    entity_id: sensor.day_1_precipitation_probability
+    id: precipitation_probability_day_1
+    entity_id: sensor.precipitation_probability_day_1
     on_value:
       - lvgl.label.update:
-          id: day_1_precipitation_probability_text
+          id: precipitation_probability_text_day_1
           text:
             format: "%.0f%%"
             args: [ 'x' ]
@@ -493,8 +493,8 @@ sensor:
 #day 2
 
   - platform: homeassistant
-    id: day_2_temperature_hi
-    entity_id: sensor.day_2_temperature_hi
+    id: temperature_hi_day_2
+    entity_id: sensor.temperature_hi_day_2
     on_value:
       - lvgl.label.update:
           id: home_weather_max_day_2
@@ -503,8 +503,8 @@ sensor:
             args: [ 'x' ]  
 
   - platform: homeassistant
-    id: day_2_temperature_low
-    entity_id: sensor.day_2_temperature_low
+    id: temperature_low_day_2
+    entity_id: sensor.temperature_low_day_2
     on_value:
       - lvgl.label.update:
           id: home_weather_min_day_2
@@ -513,21 +513,21 @@ sensor:
             args: [ 'x' ]
 
   - platform: homeassistant
-    id: day_2_precipitation
-    entity_id: sensor.day_2_precipitation
+    id: precipitation_day_2
+    entity_id: sensor.precipitation_day_2
     on_value:
       - lvgl.label.update:
-          id: day_2_precipitation_text
+          id: precipitation_text_day_2
           text: 
             format: "%.1fmm"
-            args: [ 'id(day_2_precipitation).state*25.4' ]
+            args: [ 'id(precipitation_day_2).state*25.4' ]
 
   - platform: homeassistant
-    id: day_2_precipitation_probability
-    entity_id: sensor.day_2_precipitation_probability
+    id: precipitation_probability_day_2
+    entity_id: sensor.precipitation_probability_day_2
     on_value:
       - lvgl.label.update:
-          id: day_2_precipitation_probability_text
+          id: precipitation_probability_text_day_2
           text:
             format: "%.0f%%"
             args: [ 'x' ]
@@ -538,20 +538,44 @@ sensor:
 #day 3
 
   - platform: homeassistant
-    id: day_3_temperature_hi
-    entity_id: sensor.day_3_temperature_hi
+    id: temperature_hi_day_3
+    entity_id: sensor.temperature_hi_day_3
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_3
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
 
   - platform: homeassistant
-    id: day_3_temperature_low
-    entity_id: sensor.day_3_temperature_low
+    id: temperature_low_day_3
+    entity_id: sensor.temperature_low_day_3
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_3
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
 
   - platform: homeassistant
-    id: day_3_precipitation
-    entity_id: sensor.day_3_precipitation
+    id: precipitation_day_3
+    entity_id: sensor.precipitation_day_3
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_3
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_3).state*25.4' ]
 
   - platform: homeassistant
-    id: day_3_precipitation_probability
-    entity_id: sensor.day_3_precipitation_probability
+    id: precipitation_probability_day_3
+    entity_id: sensor.precipitation_probability_day_3
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_3
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
 
   - platform: homeassistant
     entity_id: sensor.home_hours_of_sun_day_3
@@ -709,7 +733,7 @@ text_sensor:
     id: forecast_day_0_condition
     on_value:
       - lvgl.label.update:
-          id: forecast_day_0_condition_text
+          id: forecast_condition_text_day_0
           text:
             format: "%s"
             args: [ x.c_str() ]
@@ -718,105 +742,105 @@ text_sensor:
             - lambda: 'return id(forecast_day_0_condition).state == "rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0597" # rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "clear-night";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0594" # weather-night
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "cloudy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0590" # cloudy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "exceptional";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0F2F" # exceptional
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "fog";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0591" # fog
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "hail";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0592" # hail
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "lightning";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0593" # lightning
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "lightning-rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F067E" # lightning-rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "partlycloudy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0595" # partlycloudy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "pouring";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0596" # pouring
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "snowy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0598" # snowy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "snowy-rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F067F" # snowy-rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "sunny";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F0599" # sunny
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "windy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F059D" # windy
       - if:
           condition:
             - lambda: 'return id(forecast_day_0_condition).state == "windy-variant";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F059E" # windy-variant
       - if:
           condition:
@@ -825,7 +849,7 @@ text_sensor:
               - lambda: 'return id(forecast_day_0_condition).state == "unavailable";'
           then:
             - lvgl.label.update:
-                id: forecast_day_0_condition_icon
+                id: forecast_condition_icon_day_0
                 text: "\U000F14E4" # sunny-off
 
 #day 1
@@ -834,7 +858,7 @@ text_sensor:
     id: forecast_day_1_condition
     on_value:
       - lvgl.label.update:
-          id: forecast_day_1_condition_text
+          id: forecast_condition_text_day_1
           text:
             format: "%s"
             args: [ x.c_str() ]
@@ -843,105 +867,105 @@ text_sensor:
             - lambda: 'return id(forecast_day_1_condition).state == "rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0597" # rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "clear-night";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0594" # weather-night
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "cloudy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0590" # cloudy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "exceptional";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0F2F" # exceptional
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "fog";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0591" # fog
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "hail";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0592" # hail
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "lightning";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0593" # lightning
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "lightning-rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F067E" # lightning-rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "partlycloudy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0595" # partlycloudy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "pouring";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0596" # pouring
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "snowy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0598" # snowy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "snowy-rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F067F" # snowy-rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "sunny";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F0599" # sunny
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "windy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F059D" # windy
       - if:
           condition:
             - lambda: 'return id(forecast_day_1_condition).state == "windy-variant";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F059E" # windy-variant
       - if:
           condition:
@@ -950,7 +974,7 @@ text_sensor:
               - lambda: 'return id(forecast_day_1_condition).state == "unavailable";'
           then:
             - lvgl.label.update:
-                id: forecast_day_1_condition_icon
+                id: forecast_condition_icon_day_1
                 text: "\U000F14E4" # sunny-off
 #day 2
   - platform: homeassistant
@@ -958,7 +982,7 @@ text_sensor:
     id: forecast_day_2_condition
     on_value:
       - lvgl.label.update:
-          id: forecast_day_2_condition_text
+          id: forecast_condition_text_day_2
           text:
             format: "%s"
             args: [ x.c_str() ]
@@ -967,105 +991,105 @@ text_sensor:
             - lambda: 'return id(forecast_day_2_condition).state == "rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0597" # rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "clear-night";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0594" # weather-night
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "cloudy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0590" # cloudy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "exceptional";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0F2F" # exceptional
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "fog";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0591" # fog
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "hail";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0592" # hail
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "lightning";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0593" # lightning
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "lightning-rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F067E" # lightning-rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "partlycloudy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0595" # partlycloudy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "pouring";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0596" # pouring
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "snowy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0598" # snowy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "snowy-rainy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F067F" # snowy-rainy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "sunny";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F0599" # sunny
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "windy";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F059D" # windy
       - if:
           condition:
             - lambda: 'return id(forecast_day_2_condition).state == "windy-variant";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F059E" # windy-variant
       - if:
           condition:
@@ -1074,12 +1098,132 @@ text_sensor:
               - lambda: 'return id(forecast_day_2_condition).state == "unavailable";'
           then:
             - lvgl.label.update:
-                id: forecast_day_2_condition_icon
+                id: forecast_condition_icon_day_2
                 text: "\U000F14E4" # sunny-off
 
   - platform: homeassistant
     entity_id: sensor.day_3_condition
     id: forecast_day_3_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_3
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "rainy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0597" # rainy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "clear-night";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0594" # weather-night
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "cloudy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0590" # cloudy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "exceptional";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0F2F" # exceptional
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "fog";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0591" # fog
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "hail";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0592" # hail
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "lightning";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0593" # lightning
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "lightning-rainy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F067E" # lightning-rainy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "partlycloudy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0595" # partlycloudy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "pouring";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0596" # pouring
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "snowy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0598" # snowy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "snowy-rainy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F067F" # snowy-rainy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "sunny";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F0599" # sunny
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "windy";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F059D" # windy
+      - if:
+          condition:
+            - lambda: 'return id(forecast_day_3_condition).state == "windy-variant";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F059E" # windy-variant
+      - if:
+          condition:
+            or:
+              - lambda: 'return id(forecast_day_3_condition).state == "unknown";'
+              - lambda: 'return id(forecast_day_3_condition).state == "unavailable";'
+          then:
+            - lvgl.label.update:
+                id: forecast_condition_icon_day_3
+                text: "\U000F14E4" # sunny-off
 
   #-------------------------------------------------------------------------------
   # Custom Text sensors

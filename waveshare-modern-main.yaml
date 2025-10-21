@@ -43,7 +43,7 @@ esphome:
     board_build.flash_mode: dio
     board_upload.maximum_ram_size: 524288
   on_boot:
-    - priority: 60
+    - priority: 6
       then:
         - switch.turn_on: test_sw
 
@@ -190,19 +190,37 @@ script:
             snprintf(date_buf, sizeof(date_buf), "%04d-%02d-%02d (%s)", now.year, now.month, now.day_of_month, weekdays[now.day_of_week - 1]);
             return date_buf;
       - lvgl.label.update:
-          id: home_weather_0
+          id: home_weather_day_0
           text: !lambda |-
             static char date_buf[30];
             auto now = id(time_comp).now();
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             return weekdays[now.day_of_week - 1];
       - lvgl.label.update:
-          id: home_weather_1
+          id: home_weather_day_1
           text: !lambda |-
             static char date_buf[30];
             auto now = id(time_comp).now();
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             auto next =now.day_of_week + 0;
+            if (next>6) {next=next-6;};
+            return weekdays[next];
+      - lvgl.label.update:
+          id: home_weather_day_2
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            auto next =now.day_of_week + 1;
+            if (next>6) {next=next-6;};
+            return weekdays[next];
+      - lvgl.label.update:
+          id: home_weather_day_3
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            auto next =now.day_of_week + 2;
             if (next>6) {next=next-6;};
             return weekdays[next];
 
@@ -2460,7 +2478,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
-                      id: home_weather_0
+                      id: home_weather_day_0
                       text_font: regular_20
                       text_color: active_value_text_color
                   - label:
@@ -2469,7 +2487,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
-                      id: forecast_day_0_condition_text
+                      id: forecast_condition_text_day_0
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2486,7 +2504,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "\U000F14E4" # sunny-off
-                      id: forecast_day_0_condition_icon
+                      id: forecast_condition_icon_day_0
                       text_font: regular_40
                       text_color: white_text_color
                   - label:
@@ -2495,7 +2513,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
-                      id: day_0_precipitation_text
+                      id: precipitation_text_day_0
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2504,7 +2522,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
-                      id: day_0_precipitation_probability_text
+                      id: precipitation_probability_text_day_0
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2549,7 +2567,7 @@ lvgl:
                 width: 156
                 height: 105
                 styles: card_new
-                id: weather_1
+                id: weather_day_1
                 pad_all: 10
                 widgets:
                   - label:
@@ -2558,7 +2576,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
-                      id: home_weather_1
+                      id: home_weather_day_1
                       text_font: regular_20
                       text_color: active_value_text_color
                   - label:
@@ -2567,7 +2585,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
-                      id: forecast_day_1_condition_text
+                      id: forecast_condition_text_day_1
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2576,7 +2594,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "\U000F14E4" # sunny-off
-                      id: forecast_day_1_condition_icon
+                      id: forecast_condition_icon_day_1
                       text_font: regular_40
                       text_color: white_text_color
                   - label:
@@ -2593,7 +2611,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
-                      id: day_1_precipitation_text
+                      id: precipitation_text_day_1
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2602,7 +2620,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
-                      id: day_1_precipitation_probability_text
+                      id: precipitation_probability_text_day_1
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2643,12 +2661,12 @@ lvgl:
 
 #day 2
             - button:
-                x: 320
+                x: 480
                 y: 290
                 width: 156
                 height: 105
                 styles: card_new
-                id: weather_2
+                id: weather_day_2
                 pad_all: 10
                 widgets:
                   - label:
@@ -2657,7 +2675,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
-                      id: home_weather_2
+                      id: home_weather_day_2
                       text_font: regular_20
                       text_color: active_value_text_color
                   - label:
@@ -2666,7 +2684,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "---"
-                      id: forecast_day_2_condition_text
+                      id: forecast_condition_text_day_2
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2675,7 +2693,7 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "\U000F14E4" # sunny-off
-                      id: forecast_day_2_condition_icon
+                      id: forecast_condition_icon_day_2
                       text_font: regular_40
                       text_color: white_text_color
                   - label:
@@ -2692,7 +2710,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
-                      id: day_2_precipitation_text
+                      id: precipitation_text_day_2
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2701,7 +2719,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---"
-                      id: day_2_precipitation_probability_text
+                      id: precipitation_probability_text_day_2
                       text_font: regular_20
                       text_color: white_text_color
                   - label:
@@ -2740,6 +2758,104 @@ lvgl:
                       text_font: regular_20
                       text_color: white_text_color
 
+#day 3
+            - button:
+                x: 640
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_day_3
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_day_3
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_condition_text_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_day_3
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_text_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 75
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_probability_text_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_3_precipitation_icon
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
 ########################################################### END OF VLGL
 
 
