@@ -224,9 +224,6 @@ script:
             if (next>6) {next=next-6;};
             return weekdays[next];
 
-
-
-
   - id: weather_img
     then:
       - if:
@@ -443,9 +440,6 @@ script:
 
           
           
-          
-
-
 # weather on/off
   - id: show_weather
     then:
@@ -513,6 +507,7 @@ switch:
   - platform: lvgl
     widget: test_button
     id: test_sw
+    restore_mode: ALWAYS_ON
     on_turn_on:
       - script.execute: hide_weather
       #- lvgl.widget.show: climate_card
