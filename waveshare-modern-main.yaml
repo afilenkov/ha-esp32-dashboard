@@ -2442,21 +2442,30 @@ lvgl:
                       y: 55
                       align: TOP_LEFT
                       text_align: LEFT
-                      text: "\U000F059C --:--:--"
-                      id: home_weather_sunrise2
-                      recolor: true
-                      text_font: regular_20
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_now
+                      text_font: regular_40
                       text_color: white_text_color
-                  - label:
-                      x: 0
-                      y: 73
-                      align: TOP_RIGHT
-                      text_align: LEFT
-                      text: "--:--:-- \U000F059B"
-                      id: home_weather_sunset2
-                      recolor: true
-                      text_font: regular_20
-                      text_color: white_text_color
+#                  - label:
+#                      x: 0
+#                      y: 55
+#                      align: TOP_LEFT
+#                      text_align: LEFT
+#                      text: "\U000F059C --:--:--"
+#                      id: home_weather_sunrise2
+#                      recolor: true
+#                      text_font: regular_20
+#                      text_color: white_text_color
+#                  - label:
+#                      x: 0
+#                      y: 73
+#                      align: TOP_RIGHT
+#                      text_align: LEFT
+#                      text: "--:--:-- \U000F059B"
+#                      id: home_weather_sunset2
+#                      recolor: true
+#                      text_font: regular_20
+#                      text_color: white_text_color
 #day 0
             - button:
                 x: 160
