@@ -9,8 +9,8 @@ substitutions:
   friendly_name: Waveshare 7inch
   device_sampling_time: 30s
   font: gfonts://Roboto
-  latitude: "47.68615195631112"
-  longitude: "-122.12323617748433"
+  latitude: "47.674228"
+  longitude: "-122.125004"
   mdi: fonts/materialdesignicons-webfont.ttf 
   characters: " !#%'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ$"
   
@@ -26,9 +26,6 @@ globals: ##to set default reboot behavior
 external_components:
   - source: github://esphome/esphome@2025.7.1
     components: [i2c, ch422g]
-
-packages:
-  sensor: !include waveshare-modern-sensors.yaml
 
 ################################################################################
 # Board Configuration
@@ -74,6 +71,34 @@ esp32:
     advanced:
       enable_idf_experimental_features: True
 
+################################################################################
+# IO Extender
+################################################################################
+ch422g:
+  - id: ch422g_hub
+
+################################################################################
+# Switch
+################################################################################
+switch:
+  - platform: restart
+    name: "Restart"
+    id: device_restart
+  
+  - platform: safe_mode
+    name: Use Safe Mode
+    id: device_safe_mode
+    
+  - platform: gpio
+    id: lcdbacklight
+    name: lcdbacklight
+    pin:
+      ch422g: ch422g_hub
+      number: 2
+      mode:
+        output: true
+      inverted: false
+    restore_mode: ALWAYS_ON
 
 ################################################################################
 # Enable logging
@@ -121,6 +146,9 @@ time:
           - script.execute: time_update
           - script.execute: date_update
 
+################################################################################
+# Sun tracker
+################################################################################
 sun:
   id: sun_time
   latitude: $latitude     
@@ -158,7 +186,7 @@ wifi:
 # script
 ################################################################################
 script:
-# Time update  
+  # Time update  
   - id: time_update
     then:
       - lvgl.label.update:
@@ -221,170 +249,29 @@ script:
 
   - id: battery_update
     then:
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=0;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <10;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F007A" # battery-10
+      - lvgl.label.update:
+          id: house_battery_power_text_icon1
+          text: !lambda |-
+            auto battery_state = id(luxpower_lxp_battery_state_of_charge).state;
+            if (battery_state<10) { return "\U000F007A"; } else
+            if (battery_state<20) { return "\U000F007B"; } else
+            if (battery_state<30) { return "\U000F007C"; } else
+            if (battery_state<40) { return "\U000F007D"; } else
+            if (battery_state<50) { return "\U000F007E"; } else
+            if (battery_state<60) { return "\U000F007F"; } else
+            if (battery_state<70) { return "\U000F0080"; } else
+            if (battery_state<80) { return "\U000F0081"; } else
+            if (battery_state<90) { return "\U000F0082"; } else 
+            { return "\U000F0079"; };
 
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=10;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <20;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F007B" # battery-20
-
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=20;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <30;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F007C" # battery-30
+      - lvgl.label.update:
+          id: house_battery_power_text_icon2
+          text: !lambda |-
+            auto  battery_power_state = id(house_battery_power).state;
+            if (battery_power_state<0) { return "\U000F0533"; } else
+            if (battery_power_state>0) { return "\U000F0535"; } else
+            { return "\U000F0534"; };
           
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=30;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <40;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F007D" # battery-40
-          
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=40;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <50;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F007E" # battery-50
-
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=50;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <60;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F007F" # battery-60
-
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=60;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <70;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F0080" # battery-70
-          
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=70;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <80;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F0081" # battery-80
-          
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=80;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <90;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F0082" # battery-90
-          
-      - if:
-          condition:
-            and:
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state >=90;'
-              - lambda: 'return id(luxpower_lxp_battery_state_of_charge).state <110;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon1
-                 text: "\U000F0079" # battery-100
-          
-      - if:
-          condition:
-              - lambda: 'return id(house_battery_power).state == 0;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon2
-                 text: "\U000F0534" # trending-neutral
-      - if:
-          condition:
-              - lambda: 'return id(house_battery_power).state > 0;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon2
-                 text: "\U000F0535" # trending-up
-      - if:
-          condition:
-              - lambda: 'return id(house_battery_power).state < 0;'
-          then:
-              - lvgl.label.update:
-                 id: house_battery_power_text_icon2
-                 text: "\U000F0533" # trending-down
-
-          
-################################################################################
-# Web Server
-################################################################################
-#web_server:
-#  port: 80
-#  version: 2
-#  include_internal: true
-#  auth:
-#    username: "flkgjlaskfjg"
-#    password: !secret web_server_password
-#  local: true
-
-################################################################################
-# IO Extender
-################################################################################
-ch422g:
-  - id: ch422g_hub
-
-################################################################################
-# Switch
-################################################################################
-switch:
-  - platform: restart
-    name: "Restart"
-    id: device_restart
-  
-  - platform: safe_mode
-    name: Use Safe Mode
-    id: device_safe_mode
-    
-  - platform: gpio
-    id: lcdbacklight
-    name: lcdbacklight
-    pin:
-      ch422g: ch422g_hub
-      number: 2
-      mode:
-        output: true
-      inverted: false
-    restore_mode: ALWAYS_ON
-
 
 ################################################################################
 # Interval
@@ -402,47 +289,688 @@ interval:
             - lambda: |-
                 id(wifi_connection) = false;
 
+################################################################################
+# Mapping
+################################################################################
+mapping:
+  - id: weather_icon
+    from: string
+    to: string 
+    entries:
+      "clear-night": "\U000F0594"
+      "cloudy": "\U000F0590"
+      "exceptional": "\U000F0F2F"
+      "fog": "\U000F0591"
+      "hail": "\U000F0592"
+      "lightning": "\U000F0593"
+      "lightning-rainy": "\U000F067E"
+      "partlycloudy": "\U000F0595"
+      "pouring": "\U000F0596"
+      "rainy": "\U000F0597"
+      "snowy": "\U000F0598"
+      "snowy-rainy": "\U000F067F"
+      "sunny": "\U000F0599"
+      "windy": "\U000F059D"
+      "windy-variant": "\U000F059E"
+      "unknown": "\U000F14E4"
+      "unavailable": "\U000F14E4"
+
+  - id: moon_icon
+    from: string
+    to: string 
+    entries:
+      "new_moon": "\U000F0F64" # moon-new
+      "waxing_crescent": "\U000F0F67" # moon-waxing-crescent
+      "first_quarter":  "\U000F0F61" # moon-first-quarter
+      "waxing_gibbous": "\U000F0F68" # moon-waxing-gibbous
+      "full_moon": "\U000F0F62" # moon-full
+      "waning_gibbous": "\U000F0F66" # moon-waning-gibbous
+      "last_quarter": "\U000F0F63" # moon-last-quarter
+      "waning_crescent": "\U000F0F65" # moon-waning-crescent
+
+################################################################################
+# Sensors
+################################################################################
+sensor:
+  # WiFi
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    id: ${device_internal_name}_wifi_signal_sensor
+    update_interval: ${device_sampling_time}
+
+  # Uptime
+  - platform: uptime
+    name: "Uptime Sensor"
+    id: ${device_internal_name}_uptime_sensor
+    update_interval: ${device_sampling_time}
+    internal: true
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: ${device_internal_name}_uptime_human
+            state: !lambda |-
+              int seconds = round(id(${device_internal_name}_uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+
+# HA Energy Sensor
+  - platform: homeassistant
+    entity_id: sensor.luxpower_lxp_grid_power_ct
+    id: energy_meter_power
+    accuracy_decimals: 1          
+    on_value:
+      - lvgl.label.update:
+          id: energy_meter_power_title
+          text:
+            format: "\U000F192C %.0fW"
+            args: [ 'x' ]
+      #- lvgl.indicator.update:
+      #    id: grid_needle
+      #    value: !lambda return x * 10;
+      #- lvgl.label.update:
+      #    id: grid_in_text
+      #    text:
+      #      format: "%.1f"
+      #      args: [ 'x' ]
+  
+  ## Power usage
+  - platform: homeassistant
+    id: grid_import
+    entity_id: sensor.luxpower_lxp_grid_power
+    on_value:
+      - lvgl.label.update:
+          id: grid_power_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: grid_power_text2
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: grid_power_icon2
+                text_color: not_active_text
+          else:
+            - lvgl.label.update:
+                id: grid_power_text2
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: grid_power_icon2
+                text_color: active_value_text_color
 
 
+  - platform: homeassistant
+    id: house_load
+    entity_id: sensor.luxpower_lxp_load_power
+    on_value:
+      - lvgl.label.update:
+          id: house_load_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]            
 
+  - platform: homeassistant
+    id: luxpower_lxp_battery_state_of_charge
+    entity_id: sensor.luxpower_lxp_battery_state_of_charge
+    on_value:
+      - lvgl.indicator.update:
+          id: luxpower_lxp_battery_state_of_charge_needle2
+          value: !lambda return x;
+      - lvgl.label.update:
+          id: luxpower_lxp_battery_state_of_charge_text2
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: luxpower_lxp_pv_power
+    entity_id: sensor.luxpower_lxp_pv_power
+    on_value:
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text3
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text4
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.indicator.update:
+          id: luxpower_lxp_pv_power_needle2
+          value: !lambda return x;
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_text3
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_icon3
+                text_color: not_active_text
+          else:
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_text3
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_icon3
+                text_color: active_value_text_color
+
+  - platform: homeassistant
+    id: house_battery_power
+    entity_id: sensor.luxpower_lxp_battery_power
+    on_value:
+      - script.execute: battery_update
+      - lvgl.label.update:
+          id: house_battery_power_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: house_battery_power_text2
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: house_battery_power_text_icon1
+                text_color: not_active_text
+
+          else:
+            - lvgl.label.update:
+                id: house_battery_power_text2
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: house_battery_power_text_icon1
+                text_color: active_value_text_color
+
+
+  ## total solar power
+  - platform: homeassistant
+    id: total_solar_power_w
+    entity_id: sensor.daily_pv_energy
+    on_value:
+      - lvgl.label.update:
+          id: daily_luxpower_lxp_pv_power_text2
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: daily_grid_energy
+    entity_id: sensor.daily_energy_in
+    on_value:
+      - lvgl.label.update:
+          id: daily_grid_energy_text2
+          text:
+            format: "%.1fKWh"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: daily_load_energy
+    entity_id: sensor.daily_load_energy
+    on_value:    
+      - lvgl.label.update:
+          id: daily_load_energy_text2
+          text:
+            format: "%.1fKWh"
+            args: [ 'x' ]  
+
+
+  - platform: homeassistant
+    entity_id: sensor.home_realfeel_temperature_min_day_0
+    id: home_realfeel_temperature_min_day_0
+
+  - platform: homeassistant
+    entity_id: sensor.home_humidity
+    id: home_humidity
+
+
+  - platform: homeassistant
+    entity_id: sensor.home_wind_speed_day_0
+    id: home_wind_speed_day_0
+
+  - platform: homeassistant
+    entity_id: sensor.home_precipitation
+    id: home_precipitation
+
+  ## Indoor temperature
+  - platform: homeassistant
+    id: indoor_temperature
+    entity_id: sensor.thermostat_temperature
+
+  ## Outdoor temperature
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.thermostat_outdoor_temperature
+    on_value:
+      - lvgl.label.update:
+          id: outdoor_temperature_text
+          text:
+            format: "%.1f °C"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: yearly_pv_energy
+    entity_id: sensor.yearly_pv_energy
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: yearly_pv_energy_cost
+            state: !lambda |-
+              return x*0.171822;      
+
+  - platform: template
+    id: yearly_pv_energy_cost
+    on_value:
+      - lvgl.label.update:
+          id: yearly_pv_cost2
+          text:
+            format: "$%.2f"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: temperature_hi_day_0
+    entity_id: sensor.temperature_hi_day_0
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_0
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: temperature_low_day_0
+    entity_id: sensor.temperature_low_day_0
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_0
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_0
+    entity_id: sensor.precipitation_day_0
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_0
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_0).state*25.4' ]
+
+
+  - platform: homeassistant
+    id: precipitation_probability_day_0
+    entity_id: sensor.precipitation_probability_day_0
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_0
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_0
+    id: home_hours_of_sun_day_0
+  
+
+#day 1
+  - platform: homeassistant
+    id: temperature_hi_day_1
+    entity_id: sensor.temperature_hi_day_1
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_1
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: temperature_low_day_1
+    entity_id: sensor.temperature_low_day_1
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_1
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_1
+    entity_id: sensor.precipitation_day_1
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_1
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_1).state*25.4' ]
+
+  - platform: homeassistant
+    id: precipitation_probability_day_1
+    entity_id: sensor.precipitation_probability_day_1
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_1
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_1
+    id: home_hours_of_sun_day_1
+  
+#day 2
+
+  - platform: homeassistant
+    id: temperature_hi_day_2
+    entity_id: sensor.temperature_hi_day_2
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_2
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: temperature_low_day_2
+    entity_id: sensor.temperature_low_day_2
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_2
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_2
+    entity_id: sensor.precipitation_day_2
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_2
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_2).state*25.4' ]
+
+  - platform: homeassistant
+    id: precipitation_probability_day_2
+    entity_id: sensor.precipitation_probability_day_2
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_2
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_2
+    id: home_hours_of_sun_day_2
+#day 3
+
+  - platform: homeassistant
+    id: temperature_hi_day_3
+    entity_id: sensor.temperature_hi_day_3
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_3
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: temperature_low_day_3
+    entity_id: sensor.temperature_low_day_3
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_3
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_3
+    entity_id: sensor.precipitation_day_3
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_3
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_3).state*25.4' ]
+
+  - platform: homeassistant
+    id: precipitation_probability_day_3
+    entity_id: sensor.precipitation_probability_day_3
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_3
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_3
+    id: home_hours_of_sun_day_3
+
+
+################################################################################
+# Text Sensors
+################################################################################
+text_sensor:
+  #-------------------------------------------------------------------------------
+  # ESP32 internal sensors
+  #-------------------------------------------------------------------------------
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      id: ${device_internal_name}_ip_address
+    ssid:
+      name: Connected SSID
+      id: ${device_internal_name}_connected_ssid
+    mac_address:
+      name: Mac Wifi Address
+      id: ${device_internal_name}_mac_address
+
+
+# sun rise/set
+  - platform: sun
+    name: Sun Rise
+    id: sun_rise
+    type: sunrise
+    internal: True
+
+            
+  - platform: sun
+    name: Sun set
+    id: sun_set
+    type: sunset
+    internal: True
+
+
+  - platform: homeassistant
+    entity_id: weather.home
+    id: weather_home
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_text2
+          text: 
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_now
+          text: !lambda return weather_icon.get(id(weather_home).state);
+
+
+  - platform: template
+    id: daylight_duration
+    update_interval: 60s
+    lambda: |-
+      std::string  sunrise = id(sun_rise).state.c_str();
+      std::string  sunset = id(sun_set).state.c_str();
+      if (sunrise.length() < 8) {
+        std::string r = "sunrise";
+        return r;
+      }
+      if (sunset.length() < 8) {
+        std::string r = "sunset";
+        return r;
+      }
+      std::string hh = sunrise.substr(0, 2);
+      std::string mm = sunrise.substr(3, 2);
+      std::string ss = sunrise.substr(6, 2);
+      auto iSunrise = atoi(hh.c_str())*3600+atoi(mm.c_str())*60+atoi(ss.c_str());
+
+      hh = sunset.substr(0, 2);
+      mm = sunset.substr(3, 2);
+      ss = sunset.substr(6, 2);
+      auto iSunset = atoi(hh.c_str())*3600+atoi(mm.c_str())*60+atoi(ss.c_str());
+
+      int total_seconds = iSunset - iSunrise;
+      int hours = (total_seconds % 86400) / 3600;
+      int minutes = ((total_seconds % 86400) % 3600) / 60;
+      int seconds = ((total_seconds % 86400) % 3600) % 60;    
+      return {str_sprintf("%02d:%02d:%02d", hours, minutes, seconds)};   
+      
+
+  - platform: template
+    id: sun_rise_short
+    update_interval: 60s
+    lambda: |-
+      std::string  sunrise = id(sun_rise).state.c_str();
+      if (sunrise.length() < 8) {
+        std::string r = "sunrise";
+        return r;
+      }
+      std::string hh = sunrise.substr(0, 2);
+      std::string mm = sunrise.substr(3, 2);
+      return {str_sprintf("%02d:%02d", atoi(hh.c_str()), atoi(mm.c_str()))};   
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunrise3
+          text:
+            format: "#FFA500 \U000F059C# %s"
+            args: [ x.c_str() ]
+
+  - platform: template
+    id: sun_set_short
+    update_interval: 60s
+    lambda: |-
+      std::string  sunset = id(sun_set).state.c_str();
+      if (sunset.length() < 8) {
+        std::string r = "sunset";
+        return r;
+      }
+      std::string hh = sunset.substr(0, 2);
+      std::string mm = sunset.substr(3, 2);
+      return {str_sprintf("%02d:%02d", atoi(hh.c_str()), atoi(mm.c_str()))};   
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunset3
+          text:
+            format: "%s #FF0000 \U000F059B#  "
+            args: [ x.c_str() ]
+
+#day 0
+  - platform: homeassistant
+    entity_id: sensor.condition_day_0
+    id: forecast_day_0_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_0
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_0
+          text: !lambda return weather_icon.get(id(forecast_day_0_condition).state);
+
+
+#day 1
+  - platform: homeassistant
+    entity_id: sensor.condition_day_1
+    id: forecast_day_1_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_1
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_1
+          text: !lambda return weather_icon.get(id(forecast_day_1_condition).state);
+
+
+#day 2
+  - platform: homeassistant
+    entity_id: sensor.condition_day_2
+    id: forecast_day_2_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_2
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_2
+          text: !lambda return weather_icon.get(id(forecast_day_2_condition).state);
+
+
+  - platform: homeassistant
+    entity_id: sensor.condition_day_3
+    id: forecast_day_3_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_3
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_3
+          text: !lambda return weather_icon.get(id(forecast_day_3_condition).state);
+
+  - platform: homeassistant
+    id: ha_moon_phase
+    entity_id: sensor.moon_phase
+    on_value:
+      - lvgl.label.update:
+          id: moon_phase_icon_now
+          text: !lambda return moon_icon.get(id(ha_moon_phase).state);
+
+  #-------------------------------------------------------------------------------
+  # Custom Text sensors
+  #-------------------------------------------------------------------------------
+  - platform: template
+    name: Uptime Human Readable
+    id: ${device_internal_name}_uptime_human
+    icon: mdi:clock-start
+
+  - platform: template
+    name: RTC
+    id: label_clock
+
+################################################################################
+# Colors
+################################################################################
 
 color:
-  - id: my_red
-    red: 100%
-    green: 0%
-    blue: 0%
-  - id: my_pink
-    red: 100%
-    green: 10%
-    blue: 40%
-  - id: my_yellow
-    red: 100%
-    green: 100%
-    blue: 0%
-  - id: my_green
-    red: 0%
-    green: 100%
-    blue: 0%
-  - id: my_blue
-    red: 0%
-    green: 0%
-    blue: 100%
-  - id: my_light_blue
-    red: 55%
-    green: 80%
-    blue: 100%
   - id: my_dark_blue
     red: 10%
     green: 10%
     blue: 44%
-  - id: my_gray
-    red: 50%
-    green: 50%
-    blue: 50%
-  - id: my_white
-    red: 100%
-    green: 100%
-    blue: 100%
   - id: my_black
     red: 0%
     green: 0%
@@ -455,36 +983,11 @@ color:
     hex: E5E5E5
 
 
+################################################################################
+# Fonts
+################################################################################
 
 font:
-  - file: "fonts/arial.ttf"
-    id: arial_98
-    size: 98
-  - file: "fonts/arial.ttf"
-    id: arial_96
-    size: 96
-  - file: "fonts/arial.ttf"
-    id: arial_134
-    size: 134
-  - file: "fonts/arial.ttf"
-    id: arial_128
-    size: 128
-  - file: "fonts/arial.ttf"
-    id: arial_48
-    size: 48
-  - file: "fonts/arial.ttf"
-    id: arial_36
-    size: 36
-  - file: "fonts/arial.ttf"
-    id: arial_24
-    size: 24
-  - file: "fonts/arial.ttf"
-    id: arial_12
-    size: 12
-  - file: "gfonts://Roboto"
-    id: roboto10
-    size: 10
-    bpp: 4
   - file: "fonts/RobotoCondensed-Regular.ttf"
     id: roboto_56
     size: 56
@@ -612,180 +1115,7 @@ font:
           "\U000F0079", # battery-100
           ]
 
-  - file: "fonts/RobotoCondensed-Regular.ttf"
-    id: roboto_40
-    size: 40
-    bpp: 4
-    glyphsets:
-      - GF_Latin_Core
-    extras:
-      - file: "fonts/materialdesignicons-webfont.ttf"
-        glyphs: [
-          "\U000F050F", # thermometer
-          "\U000F10C3", # thermometer low
-          "\U000F10C2", # thermometer high
-          "\U000F192D", # grid import
-          "\U000F02D1", # mdi-heart
-          "\U000F05F1", # ev-station
-          "\U000F140B", # lightning bolt
-          "\U000F0425", # power
-          "\U000F068A", # shield-home
-          "\U000F02DC", # home
-          "\U000F1A91", # cash-clock
-          "\U000F0F55", # home-thermometer-outline
-          "\U000F18D6", # sun-thermometer
-          "\U000F1819", # bathtub-outline
-          "\U000F1818", # bathtub
-          "\U000F1A44", # heat-pump-outline
-          "\U000F0335", # lightbulb
-          "\U000F0336", # lightbulb_off
-          "\U000F0769", # ceiling_light
-          "\U000F06B5", # lamp   
-          "\U000F08DD", # floor_lamp   
-          "\U000F12BA", # string_lights  
-          "\U000F0914", # track_light 
-          "\U000F1A2F", # bulkhead_light 
-          "\U000F07D6", # led_strip
-          "\U000F1020", # coach_lamp
-          "\U000F1798", # ceiling_fan_light
-          "\U000F0FA6", # car-seat-heater
-          "\U000F0594", # weather-night
-          "\U000F1054", # outdoor-lamp 
-          "\U000F1A85", # water-thermometer
-          "\U000F192C", # transmission-tower-export
-          "\U000F1A74", # solar-power-variant-outline 
-          "\U000F010C", # car-battery
-          "\U000F1325", # hydraulic-oil-temperature
-          "\U000F025B", # apple
-          "\U000F1045", # fruit-grapes-outline
-          "\U000F1A73", # solar-power-variant
-          "\U000F05A9", # wifi
-          "\U000F05AA", # wifi-off
-          "\U000F0533", # trending-down
-          "\U000F0535", # trending-up
-          "\U000F0534", # trending-neutral
-          "\U000F1903", # home-lightning-bolt
-          "\U000F17DE", # battery-arrow-down
-          "\U000F17E0", # battery-arrow-up
-          "\U000F12A1", # battery-low
-          "\U000F12A3", # battery-high
-          "\U000F0091", # battery-unknown
-          "\U000F1A78", # sun-clock-outline
-          ]
-
-  - file: "fonts/RobotoCondensed-Regular.ttf"
-    id: roboto_46
-    size: 46
-    bpp: 4
-    glyphsets:
-      - GF_Latin_Core
-    extras:
-      - file: "fonts/materialdesignicons-webfont.ttf"
-        glyphs: [
-          "\U000F050F", # thermometer
-          "\U000F10C3", # thermometer low
-          "\U000F10C2", # thermometer high
-          "\U000F192D", # grid import
-          "\U000F02D1", # mdi-heart
-          "\U000F05F1", # ev-station
-          "\U000F140B", # lightning bolt
-          "\U000F0425", # power
-          "\U000F068A", # shield-home
-          "\U000F02DC", # home
-          "\U000F1A91", # cash-clock
-          "\U000F0F55", # home-thermometer-outline
-          "\U000F18D6", # sun-thermometer
-          "\U000F1819", # bathtub-outline
-          "\U000F1818", # bathtub
-          "\U000F1A44", # heat-pump-outline
-          "\U000F0335", # lightbulb
-          "\U000F0336", # lightbulb_off
-          "\U000F0769", # ceiling_light
-          "\U000F06B5", # lamp   
-          "\U000F08DD", # floor_lamp   
-          "\U000F12BA", # string_lights  
-          "\U000F0914", # track_light 
-          "\U000F1A2F", # bulkhead_light 
-          "\U000F07D6", # led_strip
-          "\U000F1020", # coach_lamp
-          "\U000F1798", # ceiling_fan_light
-          "\U000F0FA6", # car-seat-heater
-          "\U000F0594", # weather-night
-          "\U000F1054", # outdoor-lamp 
-          "\U000F1A85", # water-thermometer
-          "\U000F192C", # transmission-tower-export
-          "\U000F1A74", #solar-power-variant-outline 
-          "\U000F010C", #car-battery
-          "\U000F1325", #hydraulic-oil-temperature
-          "\U000F025B", #apple
-          "\U000F1045", # fruit-grapes-outline
-          "\U000F1A73", # solar-power-variant
-          "\U000F05A9", # wifi
-          "\U000F05AA", # wifi-off
-          "\U000F0533", # trending-down
-          "\U000F0535", # trending-up
-          "\U000F0534", # trending-neutral
-          "\U000F1903", # home-lightning-bolt
-          "\U000F1A78", # sun-clock-outline
-          "\U000F17DE", # battery-arrow-down
-          "\U000F17E0", # battery-arrow-up
-          "\U000F12A1", # battery-low
-          "\U000F12A3", # battery-high
-          "\U000F0091", # battery-unknown
-          ]
-
-  - file: "fonts/materialdesignicons-webfont.ttf"
-    id: icons_100
-    size: 100
-    bpp: 4
-    glyphs: [
-      "\U000F0594", # clear-night
-      "\U000F0590", # cloudy
-      "\U000F0F2F", # exceptional
-      "\U000F0591", # fog
-      "\U000F0592", # hail
-      "\U000F0593", # lightning
-      "\U000F067E", # lightning-rainy
-      "\U000F0595", # partlycloudy
-      "\U000F0596", # pouring
-      "\U000F0597", # rainy
-      "\U000F0598", # snowy
-      "\U000F067F", # snowy-rainy
-      "\U000F0599", # sunny
-      "\U000F059D", # windy
-      "\U000F059E", # windy-variant
-      "\U000F14E4", # sunny-off
-      "\U000F050F", # thermometer
-      "\U000F10C3", # thermometer low
-      "\U000F10C2", # thermometer high
-      "\U000F192D", # grid import
-      "\U000F02D1", # mdi-heart
-      "\U000F05F1", # ev-station
-      "\U000F140B", # lightning bolt
-      "\U000F0425", # power
-      "\U000F068A", # shield-home
-      "\U000F02DC", # home
-      "\U000F1A91", # cash-clock
-      "\U000F0F55", # home-thermometer-outline
-      "\U000F18D6", # sun-thermometer
-      "\U000F1325", # hydraulic-oil-temperature
-      "\U000F025B", # apple
-      "\U000F1045", # fruit-grapes-outline
-      "\U000F1A73", # solar-power-variant
-      "\U000F05A9", # wifi
-      "\U000F05AA", # wifi-off
-      "\U000F0533", # trending-down
-      "\U000F0535", # trending-up
-      "\U000F0534", # trending-neutral
-      "\U000F1903", # home-lightning-bolt
-      "\U000F1A78", # sun-clock-outline
-      "\U000F17DE", # battery-arrow-down
-      "\U000F17E0", # battery-arrow-up
-      "\U000F12A1", # battery-low
-      "\U000F12A3", # battery-high
-      "\U000F0091", # battery-unknown
-      ]
-  
+ 
   - file: "$font"
     id: regular_20
     size: 20
@@ -1039,21 +1369,6 @@ font:
           "\U000F059E", # windy-variant
           "\U000F14E4", # sunny-off
           ]
-  - file: "$font"
-    id: weather_30
-    size: 30
-    bpp: 4    
-    glyphs: ${characters}
-    extras:
-      - file: '$mdi'
-        glyphs: [
-          "\U000F054A" # mdi:umbrella
-          ]
-  - file: "$font"
-    id: weather_23
-    size: 23
-    bpp: 4
-    glyphs: ${characters}
 
   - file: "$font"
     id: title_font
@@ -1072,40 +1387,11 @@ font:
           "\U000F1A73", # mdi:solar-power-variant
           "\U000F192C"  # mdi:transmission-tower-export
           ]  
-  - file: "$mdi"
-    id: icon_font_60
-    size: 60
-    bpp: 4
-    glyphs: [
-          "\U000F081C", # mdi:door-open
-          "\U000F081B", # mdi:door-closed
-          "\U000F11DB", # mdi:window-closed-variant
-          "\U000F11DC" # mdi:window-open-variant
-          ]  
-  - file: "$mdi"
-    id: icon_font_90
-    size: 90
-    bpp: 4
-    glyphs: [
-          "\U000F081C", # mdi:door-open
-          "\U000F081B", # mdi:door-closed
-          "\U000F11DB", # mdi:window-closed-variant
-          "\U000F11DC" # mdi:window-open-variant
-          ]  
           
-  - file: "$mdi"
-    id: icon_font_200
-    size: 200
-    bpp: 4
-    glyphs: [
-          "\U000F081C", # mdi:door-open
-          "\U000F081B", # mdi:door-closed
-          "\U000F11DB", # mdi:window-closed-variant
-          "\U000F11DC" # mdi:window-open-varian       
-          ]
 
-
-############################################ START OF VLGL
+################################################################################
+# LVGL
+################################################################################
 lvgl:  
   theme:
     slider:
@@ -1755,7 +2041,7 @@ lvgl:
                       align: TOP_RIGHT
                       text_align: LEFT
                       text: "---°"
-                      id: outdoor_temperature_text2
+                      id: outdoor_temperature_text
                       text_font: regular_25
                       text_color: white_text_color
                   - label:
@@ -1796,6 +2082,8 @@ lvgl:
 #                      recolor: true
 #                      text_font: regular_20
 #                      text_color: white_text_color
+
+
 #day 0
             - button:
                 x: 160
@@ -2190,16 +2478,23 @@ lvgl:
                       id: home_weather_min_day_3
                       text_font: regular_20
                       text_color: white_text_color
-########################################################### END OF VLGL
+################################################################################
+# END OF VLGL
+################################################################################
 
 
+################################################################################
+# I2C config
+################################################################################
 i2c:
   sda: GPIO08
   scl: GPIO09
   scan: True
   id: bus_a
 
+################################################################################
 # Define display
+################################################################################
 display:
   - platform: rpi_dpi_rgb
     id: my_display
@@ -2253,6 +2548,9 @@ display:
         - 47        #g6
         - 21        #g7
 
+################################################################################
+# Define touchscreen
+################################################################################
 touchscreen:
   platform: gt911
   id: my_touch
