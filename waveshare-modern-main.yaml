@@ -226,7 +226,7 @@ script:
             auto now = id(time_comp).now();
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             auto next =now.day_of_week + 0;
-            if (next>6) {next=next-6;};
+            if (next>6) {next=next-7;};
             return weekdays[next];
       - lvgl.label.update:
           id: home_weather_day_2
@@ -235,7 +235,7 @@ script:
             auto now = id(time_comp).now();
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             auto next =now.day_of_week + 1;
-            if (next>6) {next=next-6;};
+            if (next>6) {next=next-7;};
             return weekdays[next];
       - lvgl.label.update:
           id: home_weather_day_3
@@ -244,7 +244,7 @@ script:
             auto now = id(time_comp).now();
             const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
             auto next =now.day_of_week + 2;
-            if (next>6) {next=next-6;};
+            if (next>6) {next=next-7;};
             return weekdays[next];
 
   - id: battery_update
