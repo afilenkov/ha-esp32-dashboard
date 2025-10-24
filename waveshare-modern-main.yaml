@@ -949,6 +949,14 @@ font:
           "\U000F059D", # windy
           "\U000F059E", # windy-variant
           "\U000F14E4", # sunny-off
+          "\U000F0F61", # moon-first-quarter
+          "\U000F0F62", # moon-full
+          "\U000F0F63", # moon-last-quarter
+          "\U000F0F64", # moon-new
+          "\U000F0F65", # moon-waning-crescent
+          "\U000F0F66", # moon-waning-gibbous
+          "\U000F0F67", # moon-waxing-crescent
+          "\U000F0F68", # moon-waxing-gibbous
           ]   
   - file: "$font"
     id: regular_50
@@ -1757,6 +1765,15 @@ lvgl:
                       text_align: LEFT
                       text: "\U000F14E4" # sunny-off
                       id: forecast_condition_icon_now
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0F64" # moon-new
+                      id: moon_phase_icon_now
                       text_font: regular_40
                       text_color: white_text_color
 #                  - label:
