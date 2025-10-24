@@ -329,7 +329,8 @@ mapping:
       "waning_crescent": "\U000F0F65" # moon-waning-crescent
 
 ################################################################################
-# Sensors
+# Float number sensors
+# NOTE: text output sensors are below this section
 ################################################################################
 sensor:
   # WiFi
