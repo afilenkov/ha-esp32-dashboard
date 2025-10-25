@@ -1,0 +1,2574 @@
+# updated to 2025.7.2
+################################################################################
+# Substitution Variables
+################################################################################
+substitutions:
+  device_internal_name: waveshare_7inch
+  device_friendly_name: Waveshare 7inch
+  friendly_devicename: Waveshare 7inch
+  friendly_name: Waveshare 7inch
+  device_sampling_time: 30s
+  font: gfonts://Roboto
+  latitude: "47.674228"
+  longitude: "-122.125004"
+  mdi: fonts/materialdesignicons-webfont.ttf 
+  characters: " !#%'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ$"
+  
+################################################################################
+# Globals
+################################################################################
+globals: ##to set default reboot behavior
+  - id: wifi_connection
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+external_components:
+  - source: github://esphome/esphome@2025.7.1
+    components: [i2c, ch422g]
+
+################################################################################
+# Board Configuration
+################################################################################
+esphome:
+  name: ${device_internal_name}
+  friendly_name: ${device_friendly_name}
+  platformio_options:
+    build_flags: "-DBOARD_HAS_PSRAM"
+    board_build.arduino.memory_type: qio_opi
+    board_build.flash_mode: dio
+    board_upload.maximum_ram_size: 524288
+
+psram:
+  mode: octal
+  speed: 120MHz
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  cpu_frequency : 240MHz
+  framework:
+    type: esp-idf
+    version: 5.3.2
+    platform_version: 53.3.13
+    sdkconfig_options:
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESPTOOLPY_FLASHSIZE_8MB: "y"
+      CONFIG_FREERTOS_HZ: "1000"
+      CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240: y
+      CONFIG_ESPTOOLPY_FLASHMODE_QIO: y
+      CONFIG_ESPTOOLPY_FLASHFREQ_120M: y
+      CONFIG_SPIRAM_MODE_OCT: y
+      CONFIG_IDF_EXPERIMENTAL_FEATURES: y
+      CONFIG_SPIRAM_SPEED_120M: y
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: y
+      #CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_COMPILER_OPTIMIZATION_PERF: y
+      #CONFIG_COMPILER_OPTIMIZATION_DEBUG: y
+    advanced:
+      enable_idf_experimental_features: True
+
+################################################################################
+# IO Extender
+################################################################################
+ch422g:
+  - id: ch422g_hub
+
+################################################################################
+# Switch
+################################################################################
+switch:
+  - platform: restart
+    name: "Restart"
+    id: device_restart
+  
+  - platform: safe_mode
+    name: Use Safe Mode
+    id: device_safe_mode
+    
+  - platform: gpio
+    id: lcdbacklight
+    name: lcdbacklight
+    pin:
+      ch422g: ch422g_hub
+      number: 2
+      mode:
+        output: true
+      inverted: false
+    restore_mode: ALWAYS_ON
+
+################################################################################
+# Enable logging
+################################################################################
+logger:
+  logs:
+    component: ERROR
+
+################################################################################
+# Enable Home Assistant API
+################################################################################
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: !secret api_encryption_key
+  on_client_connected:
+    - if:
+        condition:
+          - lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.widget.show: ha_connected_title
+          
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.widget.hide: ha_connected_title
+################################################################################
+# time
+################################################################################
+time:
+  - platform: homeassistant
+    id: time_comp
+    #timezone: America/Los_Angeles
+    # - time.bora.net
+    # - time.windows.com
+    on_time_sync:
+      - script.execute: time_update
+      - script.execute: date_update
+    on_time:
+      - minutes: '*'
+        seconds: '*'
+        then:
+          - script.execute: time_update
+          - script.execute: date_update
+
+################################################################################
+# Sun tracker
+################################################################################
+sun:
+  id: sun_time
+  latitude: $latitude     
+  longitude: $longitude 
+
+################################################################################
+# OTA
+################################################################################
+ota:
+  platform: esphome
+  password: !secret web_server_password
+
+################################################################################
+# WiFi
+################################################################################
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+  on_connect:
+    - lvgl.label.update:
+        id: wifi_icon
+        text: "\U000F05A9"
+  on_disconnect:
+    - lvgl.label.update:
+        id: wifi_icon
+        text: "\U000F16C5"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    # ssid: ${device_wifi_name}
+    password: !secret web_server_password
+
+################################################################################
+# script
+################################################################################
+script:
+  # Time update  
+  - id: time_update
+    then:
+      - lvgl.label.update:
+          id: title_time
+          text: !lambda |-
+            static char time_buf[17];
+            auto now = id(time_comp).now();
+            bool is_pm = now.hour >= 12;
+            int hour_12 = now.hour % 12;
+            if (hour_12 == 0) {
+                hour_12 = 12; // 12 AM/PM should be displayed as 12, not 0
+            }
+            snprintf(time_buf, sizeof(time_buf), "%s %2d:%02d:%02d", is_pm ? "PM" : "AM", hour_12, now.minute,now.second );
+            return time_buf;      
+
+  - id: date_update
+    then:
+      - lvgl.label.update:
+          id: title_date
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            snprintf(date_buf, sizeof(date_buf), "%04d-%02d-%02d (%s)", now.year, now.month, now.day_of_month, weekdays[now.day_of_week - 1]);
+            return date_buf;
+      - lvgl.label.update:
+          id: home_weather_day_0
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            return weekdays[now.day_of_week - 1];
+      - lvgl.label.update:
+          id: home_weather_day_1
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            auto next =now.day_of_week + 0;
+            if (next>6) {next=next-7;};
+            return weekdays[next];
+      - lvgl.label.update:
+          id: home_weather_day_2
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            auto next =now.day_of_week + 1;
+            if (next>6) {next=next-7;};
+            return weekdays[next];
+      - lvgl.label.update:
+          id: home_weather_day_3
+          text: !lambda |-
+            static char date_buf[30];
+            auto now = id(time_comp).now();
+            const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+            auto next =now.day_of_week + 2;
+            if (next>6) {next=next-7;};
+            return weekdays[next];
+
+  - id: battery_update
+    then:
+      - lvgl.label.update:
+          id: house_battery_power_text_icon1
+          text: !lambda |-
+            auto battery_state = id(luxpower_lxp_battery_state_of_charge).state;
+            if (battery_state<10) { return "\U000F007A"; } else
+            if (battery_state<20) { return "\U000F007B"; } else
+            if (battery_state<30) { return "\U000F007C"; } else
+            if (battery_state<40) { return "\U000F007D"; } else
+            if (battery_state<50) { return "\U000F007E"; } else
+            if (battery_state<60) { return "\U000F007F"; } else
+            if (battery_state<70) { return "\U000F0080"; } else
+            if (battery_state<80) { return "\U000F0081"; } else
+            if (battery_state<90) { return "\U000F0082"; } else 
+            { return "\U000F0079"; };
+
+      - lvgl.label.update:
+          id: house_battery_power_text_icon2
+          text: !lambda |-
+            auto  battery_power_state = id(house_battery_power).state;
+            if (battery_power_state<0) { return "\U000F0533"; } else
+            if (battery_power_state>0) { return "\U000F0535"; } else
+            { return "\U000F0534"; };
+          
+
+################################################################################
+# Interval
+################################################################################
+interval:
+  - interval: 10s
+    then:
+      - if:
+          condition:
+            wifi.connected:
+          then:
+            - lambda: |-
+                id(wifi_connection) = true;
+          else:
+            - lambda: |-
+                id(wifi_connection) = false;
+
+################################################################################
+# Mapping
+################################################################################
+mapping:
+  - id: weather_icon
+    from: string
+    to: string 
+    entries:
+      "clear-night": "\U000F0594"
+      "cloudy": "\U000F0590"
+      "exceptional": "\U000F0F2F"
+      "fog": "\U000F0591"
+      "hail": "\U000F0592"
+      "lightning": "\U000F0593"
+      "lightning-rainy": "\U000F067E"
+      "partlycloudy": "\U000F0595"
+      "pouring": "\U000F0596"
+      "rainy": "\U000F0597"
+      "snowy": "\U000F0598"
+      "snowy-rainy": "\U000F067F"
+      "sunny": "\U000F0599"
+      "windy": "\U000F059D"
+      "windy-variant": "\U000F059E"
+      "unknown": "\U000F14E4"
+      "unavailable": "\U000F14E4"
+
+  - id: moon_icon
+    from: string
+    to: string 
+    entries:
+      "new_moon": "\U000F0F64" # moon-new
+      "waxing_crescent": "\U000F0F67" # moon-waxing-crescent
+      "first_quarter":  "\U000F0F61" # moon-first-quarter
+      "waxing_gibbous": "\U000F0F68" # moon-waxing-gibbous
+      "full_moon": "\U000F0F62" # moon-full
+      "waning_gibbous": "\U000F0F66" # moon-waning-gibbous
+      "last_quarter": "\U000F0F63" # moon-last-quarter
+      "waning_crescent": "\U000F0F65" # moon-waning-crescent
+
+################################################################################
+# Float number sensors
+# NOTE: text output sensors are below this section
+################################################################################
+sensor:
+  # WiFi
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    id: ${device_internal_name}_wifi_signal_sensor
+    update_interval: ${device_sampling_time}
+
+  # Uptime
+  - platform: uptime
+    name: "Uptime Sensor"
+    id: ${device_internal_name}_uptime_sensor
+    update_interval: ${device_sampling_time}
+    internal: true
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: ${device_internal_name}_uptime_human
+            state: !lambda |-
+              int seconds = round(id(${device_internal_name}_uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+
+# HA Energy Sensor
+  - platform: homeassistant
+    entity_id: sensor.luxpower_lxp_grid_power_ct
+    id: energy_meter_power
+    accuracy_decimals: 1          
+    on_value:
+      - lvgl.label.update:
+          id: energy_meter_power_title
+          text:
+            format: "\U000F192C %.0fW"
+            args: [ 'x' ]
+      #- lvgl.indicator.update:
+      #    id: grid_needle
+      #    value: !lambda return x * 10;
+      #- lvgl.label.update:
+      #    id: grid_in_text
+      #    text:
+      #      format: "%.1f"
+      #      args: [ 'x' ]
+  
+  ## Power usage
+  - platform: homeassistant
+    id: grid_import
+    entity_id: sensor.luxpower_lxp_grid_power
+    on_value:
+      - lvgl.label.update:
+          id: grid_power_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: grid_power_text2
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: grid_power_icon2
+                text_color: not_active_text
+          else:
+            - lvgl.label.update:
+                id: grid_power_text2
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: grid_power_icon2
+                text_color: active_value_text_color
+
+
+  - platform: homeassistant
+    id: house_load
+    entity_id: sensor.luxpower_lxp_load_power
+    on_value:
+      - lvgl.label.update:
+          id: house_load_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]            
+
+  - platform: homeassistant
+    id: luxpower_lxp_battery_state_of_charge
+    entity_id: sensor.luxpower_lxp_battery_state_of_charge
+    on_value:
+      - lvgl.indicator.update:
+          id: luxpower_lxp_battery_state_of_charge_needle2
+          value: !lambda return x;
+      - lvgl.label.update:
+          id: luxpower_lxp_battery_state_of_charge_text2
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: luxpower_lxp_pv_power
+    entity_id: sensor.luxpower_lxp_pv_power
+    on_value:
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text3
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.label.update:
+          id: luxpower_lxp_pv_power_text4
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - lvgl.indicator.update:
+          id: luxpower_lxp_pv_power_needle2
+          value: !lambda return x;
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_text3
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_icon3
+                text_color: not_active_text
+          else:
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_text3
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: luxpower_lxp_pv_power_icon3
+                text_color: active_value_text_color
+
+  - platform: homeassistant
+    id: house_battery_power
+    entity_id: sensor.luxpower_lxp_battery_power
+    on_value:
+      - script.execute: battery_update
+      - lvgl.label.update:
+          id: house_battery_power_text2
+          text:
+            format: "%.0fW"
+            args: [ 'x' ]  
+      - if:
+          condition:
+            - lambda: 'return x == 0;'
+          then:
+            - lvgl.label.update:
+                id: house_battery_power_text2
+                text_color: not_active_text
+            - lvgl.label.update:
+                id: house_battery_power_text_icon1
+                text_color: not_active_text
+
+          else:
+            - lvgl.label.update:
+                id: house_battery_power_text2
+                text_color: active_value_text_color
+            - lvgl.label.update:
+                id: house_battery_power_text_icon1
+                text_color: active_value_text_color
+
+
+  ## total solar power
+  - platform: homeassistant
+    id: total_solar_power_w
+    entity_id: sensor.daily_pv_energy
+    on_value:
+      - lvgl.label.update:
+          id: daily_luxpower_lxp_pv_power_text2
+          text:
+            format: "%.2fKWh"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: daily_grid_energy
+    entity_id: sensor.daily_energy_in
+    on_value:
+      - lvgl.label.update:
+          id: daily_grid_energy_text2
+          text:
+            format: "%.1fKWh"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: daily_load_energy
+    entity_id: sensor.daily_load_energy
+    on_value:    
+      - lvgl.label.update:
+          id: daily_load_energy_text2
+          text:
+            format: "%.1fKWh"
+            args: [ 'x' ]  
+
+
+  - platform: homeassistant
+    entity_id: sensor.home_realfeel_temperature_min_day_0
+    id: home_realfeel_temperature_min_day_0
+
+  - platform: homeassistant
+    entity_id: sensor.home_humidity
+    id: home_humidity
+
+
+  - platform: homeassistant
+    entity_id: sensor.home_wind_speed_day_0
+    id: home_wind_speed_day_0
+
+  - platform: homeassistant
+    entity_id: sensor.home_precipitation
+    id: home_precipitation
+
+  ## Indoor temperature
+  - platform: homeassistant
+    id: indoor_temperature
+    entity_id: sensor.thermostat_temperature
+
+  ## Outdoor temperature
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.thermostat_outdoor_temperature
+    on_value:
+      - lvgl.label.update:
+          id: outdoor_temperature_text
+          text:
+            format: "%.1f °C"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: yearly_pv_energy
+    entity_id: sensor.yearly_pv_energy
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: yearly_pv_energy_cost
+            state: !lambda |-
+              return x*0.171822;      
+
+  - platform: template
+    id: yearly_pv_energy_cost
+    on_value:
+      - lvgl.label.update:
+          id: yearly_pv_cost2
+          text:
+            format: "$%.2f"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: temperature_hi_day_0
+    entity_id: sensor.temperature_hi_day_0
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_0
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: temperature_low_day_0
+    entity_id: sensor.temperature_low_day_0
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_0
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_0
+    entity_id: sensor.precipitation_day_0
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_0
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_0).state*25.4' ]
+
+
+  - platform: homeassistant
+    id: precipitation_probability_day_0
+    entity_id: sensor.precipitation_probability_day_0
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_0
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_0
+    id: home_hours_of_sun_day_0
+  
+
+#day 1
+  - platform: homeassistant
+    id: temperature_hi_day_1
+    entity_id: sensor.temperature_hi_day_1
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_1
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: temperature_low_day_1
+    entity_id: sensor.temperature_low_day_1
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_1
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_1
+    entity_id: sensor.precipitation_day_1
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_1
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_1).state*25.4' ]
+
+  - platform: homeassistant
+    id: precipitation_probability_day_1
+    entity_id: sensor.precipitation_probability_day_1
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_1
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_1
+    id: home_hours_of_sun_day_1
+  
+#day 2
+
+  - platform: homeassistant
+    id: temperature_hi_day_2
+    entity_id: sensor.temperature_hi_day_2
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_2
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: temperature_low_day_2
+    entity_id: sensor.temperature_low_day_2
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_2
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_2
+    entity_id: sensor.precipitation_day_2
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_2
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_2).state*25.4' ]
+
+  - platform: homeassistant
+    id: precipitation_probability_day_2
+    entity_id: sensor.precipitation_probability_day_2
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_2
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_2
+    id: home_hours_of_sun_day_2
+#day 3
+
+  - platform: homeassistant
+    id: temperature_hi_day_3
+    entity_id: sensor.temperature_hi_day_3
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_max_day_3
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]  
+
+  - platform: homeassistant
+    id: temperature_low_day_3
+    entity_id: sensor.temperature_low_day_3
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_min_day_3
+          text: 
+            format: "%.1f°"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: precipitation_day_3
+    entity_id: sensor.precipitation_day_3
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_text_day_3
+          text: 
+            format: "%.1fmm"
+            args: [ 'id(precipitation_day_3).state*25.4' ]
+
+  - platform: homeassistant
+    id: precipitation_probability_day_3
+    entity_id: sensor.precipitation_probability_day_3
+    on_value:
+      - lvgl.label.update:
+          id: precipitation_probability_text_day_3
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    entity_id: sensor.home_hours_of_sun_day_3
+    id: home_hours_of_sun_day_3
+
+
+################################################################################
+# Text Sensors
+################################################################################
+text_sensor:
+  #-------------------------------------------------------------------------------
+  # ESP32 internal sensors
+  #-------------------------------------------------------------------------------
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      id: ${device_internal_name}_ip_address
+    ssid:
+      name: Connected SSID
+      id: ${device_internal_name}_connected_ssid
+    mac_address:
+      name: Mac Wifi Address
+      id: ${device_internal_name}_mac_address
+
+
+# sun rise/set
+  - platform: sun
+    name: Sun Rise
+    id: sun_rise
+    type: sunrise
+    internal: True
+
+            
+  - platform: sun
+    name: Sun set
+    id: sun_set
+    type: sunset
+    internal: True
+
+
+  - platform: homeassistant
+    entity_id: weather.home
+    id: weather_home
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_text2
+          text: 
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_now
+          text: !lambda return weather_icon.get(id(weather_home).state);
+
+
+  - platform: template
+    id: daylight_duration
+    update_interval: 60s
+    lambda: |-
+      std::string  sunrise = id(sun_rise).state.c_str();
+      std::string  sunset = id(sun_set).state.c_str();
+      if (sunrise.length() < 8) {
+        std::string r = "sunrise";
+        return r;
+      }
+      if (sunset.length() < 8) {
+        std::string r = "sunset";
+        return r;
+      }
+      std::string hh = sunrise.substr(0, 2);
+      std::string mm = sunrise.substr(3, 2);
+      std::string ss = sunrise.substr(6, 2);
+      auto iSunrise = atoi(hh.c_str())*3600+atoi(mm.c_str())*60+atoi(ss.c_str());
+
+      hh = sunset.substr(0, 2);
+      mm = sunset.substr(3, 2);
+      ss = sunset.substr(6, 2);
+      auto iSunset = atoi(hh.c_str())*3600+atoi(mm.c_str())*60+atoi(ss.c_str());
+
+      int total_seconds = iSunset - iSunrise;
+      int hours = (total_seconds % 86400) / 3600;
+      int minutes = ((total_seconds % 86400) % 3600) / 60;
+      int seconds = ((total_seconds % 86400) % 3600) % 60;    
+      return {str_sprintf("%02d:%02d:%02d", hours, minutes, seconds)};   
+      
+
+  - platform: template
+    id: sun_rise_short
+    update_interval: 60s
+    lambda: |-
+      std::string  sunrise = id(sun_rise).state.c_str();
+      if (sunrise.length() < 8) {
+        std::string r = "sunrise";
+        return r;
+      }
+      std::string hh = sunrise.substr(0, 2);
+      std::string mm = sunrise.substr(3, 2);
+      return {str_sprintf("%02d:%02d", atoi(hh.c_str()), atoi(mm.c_str()))};   
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunrise3
+          text:
+            format: "#FFA500 \U000F059C# %s"
+            args: [ x.c_str() ]
+
+  - platform: template
+    id: sun_set_short
+    update_interval: 60s
+    lambda: |-
+      std::string  sunset = id(sun_set).state.c_str();
+      if (sunset.length() < 8) {
+        std::string r = "sunset";
+        return r;
+      }
+      std::string hh = sunset.substr(0, 2);
+      std::string mm = sunset.substr(3, 2);
+      return {str_sprintf("%02d:%02d", atoi(hh.c_str()), atoi(mm.c_str()))};   
+    on_value:
+      - lvgl.label.update:
+          id: home_weather_sunset3
+          text:
+            format: "%s #FF0000 \U000F059B#  "
+            args: [ x.c_str() ]
+
+#day 0
+  - platform: homeassistant
+    entity_id: sensor.condition_day_0
+    id: forecast_day_0_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_0
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_0
+          text: !lambda return weather_icon.get(id(forecast_day_0_condition).state);
+
+
+#day 1
+  - platform: homeassistant
+    entity_id: sensor.condition_day_1
+    id: forecast_day_1_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_1
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_1
+          text: !lambda return weather_icon.get(id(forecast_day_1_condition).state);
+
+
+#day 2
+  - platform: homeassistant
+    entity_id: sensor.condition_day_2
+    id: forecast_day_2_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_2
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_2
+          text: !lambda return weather_icon.get(id(forecast_day_2_condition).state);
+
+
+  - platform: homeassistant
+    entity_id: sensor.condition_day_3
+    id: forecast_day_3_condition
+    on_value:
+      - lvgl.label.update:
+          id: forecast_condition_text_day_3
+          text:
+            format: "%s"
+            args: [ x.c_str() ]
+      - lvgl.label.update:
+          id: forecast_condition_icon_day_3
+          text: !lambda return weather_icon.get(id(forecast_day_3_condition).state);
+
+  - platform: homeassistant
+    id: ha_moon_phase
+    entity_id: sensor.moon_phase
+    on_value:
+      - lvgl.label.update:
+          id: moon_phase_icon_now
+          text: !lambda return moon_icon.get(id(ha_moon_phase).state);
+
+  #-------------------------------------------------------------------------------
+  # Custom Text sensors
+  #-------------------------------------------------------------------------------
+  - platform: template
+    name: Uptime Human Readable
+    id: ${device_internal_name}_uptime_human
+    icon: mdi:clock-start
+
+  - platform: template
+    name: RTC
+    id: label_clock
+
+################################################################################
+# Colors
+################################################################################
+
+color:
+  - id: my_dark_blue
+    red: 10%
+    green: 10%
+    blue: 44%
+  - id: my_black
+    red: 0%
+    green: 0%
+    blue: 0%
+  - id: not_active_text
+    hex: 444D52
+  - id: active_value_text_color
+    hex: 87DB46
+  - id: white_text_color
+    hex: E5E5E5
+
+
+################################################################################
+# Fonts
+################################################################################
+
+font:
+  - file: "fonts/RobotoCondensed-Regular.ttf"
+    id: roboto_56
+    size: 56
+    bpp: 4
+    glyphsets:
+      - GF_Latin_Core
+    extras:
+      - file: "fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F050F", # thermometer
+          "\U000F10C3", # thermometer low
+          "\U000F10C2", # thermometer high
+          "\U000F192D", # grid import
+          "\U000F02D1", # mdi-heart
+          "\U000F05F1", # ev-station
+          "\U000F140B", # lightning bolt
+          "\U000F0425", # power
+          "\U000F068A", # shield-home
+          "\U000F02DC", # home
+          "\U000F1A91", # cash-clock
+          "\U000F0F55", # home-thermometer-outline
+          "\U000F18D6", # sun-thermometer
+          "\U000F1819", # bathtub-outline
+          "\U000F1818", # bathtub
+          "\U000F1A44", # heat-pump-outline
+          "\U000F0335", # lightbulb
+          "\U000F0336", # lightbulb_off
+          "\U000F0769", # ceiling_light
+          "\U000F06B5", # lamp   
+          "\U000F08DD", # floor_lamp   
+          "\U000F12BA", # string_lights  
+          "\U000F0914", # track_light 
+          "\U000F1A2F", # bulkhead_light 
+          "\U000F07D6", # led_strip
+          "\U000F1020", # coach_lamp
+          "\U000F1798", # ceiling_fan_light
+          "\U000F0FA6", # car-seat-heater
+          "\U000F0594", # weather-night
+          "\U000F1054", # outdoor-lamp 
+          "\U000F1A85", # water-thermometer
+          "\U000F192C", # transmission-tower-export
+          "\U000F1A74", # solar-power-variant-outline 
+          "\U000F010C", # car-battery
+          "\U000F1325", # hydraulic-oil-temperature
+          "\U000F025B", # apple
+          "\U000F1045", # fruit-grapes-outline
+          "\U000F1A73", # solar-power-variant
+          "\U000F05A9", # wifi
+          "\U000F05AA", # wifi-off
+          "\U000F0533", # trending-down
+          "\U000F0535", # trending-up
+          "\U000F0534", # trending-neutral
+          "\U000F1903", # home-lightning-bolt
+          "\U000F1A78", # sun-clock-outline
+          ]
+
+  - file: "fonts/RobotoCondensed-Regular.ttf"
+    id: roboto_80
+    size: 80
+    bpp: 4
+    glyphsets:
+      - GF_Latin_Core
+    extras:
+      - file: "fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F050F", # thermometer
+          "\U000F10C3", # thermometer low
+          "\U000F10C2", # thermometer high
+          "\U000F192D", # grid import
+          "\U000F02D1", # mdi-heart
+          "\U000F05F1", # ev-station
+          "\U000F140B", # lightning bolt
+          "\U000F0425", # power
+          "\U000F068A", # shield-home
+          "\U000F02DC", # home
+          "\U000F1A91", # cash-clock
+          "\U000F0F55", # home-thermometer-outline
+          "\U000F18D6", # sun-thermometer
+          "\U000F1819", # bathtub-outline
+          "\U000F1818", # bathtub
+          "\U000F1A44", # heat-pump-outline
+          "\U000F0335", # lightbulb
+          "\U000F0336", # lightbulb_off
+          "\U000F0769", # ceiling_light
+          "\U000F06B5", # lamp   
+          "\U000F08DD", # floor_lamp   
+          "\U000F12BA", # string_lights  
+          "\U000F0914", # track_light 
+          "\U000F1A2F", # bulkhead_light 
+          "\U000F07D6", # led_strip
+          "\U000F1020", # coach_lamp
+          "\U000F1798", # ceiling_fan_light
+          "\U000F0FA6", # car-seat-heater
+          "\U000F0594", # weather-night
+          "\U000F1054", # outdoor-lamp 
+          "\U000F1A85", # water-thermometer
+          "\U000F192C", # transmission-tower-export
+          "\U000F1A74", # solar-power-variant-outline 
+          "\U000F010C", # car-battery
+          "\U000F1325", # hydraulic-oil-temperature
+          "\U000F025B", # apple
+          "\U000F1045", # fruit-grapes-outline
+          "\U000F1A73", # solar-power-variant
+          "\U000F05A9", # wifi
+          "\U000F05AA", # wifi-off
+          "\U000F0533", # trending-down
+          "\U000F0535", # trending-up
+          "\U000F0534", # trending-neutral
+          "\U000F1903", # home-lightning-bolt
+          "\U000F1A78", # sun-clock-outline
+          "\U000F17DE", # battery-arrow-down
+          "\U000F17E0", # battery-arrow-up
+          "\U000F12A1", # battery-low
+          "\U000F12A3", # battery-high
+          "\U000F0091", # battery-unknown
+          "\U000F007A", # battery-10
+          "\U000F007B", # battery-20
+          "\U000F007C", # battery-30
+          "\U000F007D", # battery-40
+          "\U000F007E", # battery-50
+          "\U000F007F", # battery-60
+          "\U000F0080", # battery-70
+          "\U000F0081", # battery-80
+          "\U000F0082", # battery-90
+          "\U000F0079", # battery-100
+          ]
+
+ 
+  - file: "$font"
+    id: regular_20
+    size: 20
+    bpp: 4
+    glyphs: ${characters}
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F054A", # mdi:umbrella
+          "\U000F17FF", # mdi:sun-wireless-outline
+          "\U000F0C16", # mdi:alpha-o-circle
+          "\U000F0765", # mdi:circle
+          "\U000F00B5", # mdi:blur
+          "\U000F00B6",  # mdi:blur-linear
+          "\U000F059C", # mdi:weather-sunset-up
+          "\U000F059B",  # mdi:weather-sunset-down
+          "\U000F1A78", # sun-clock-outline
+          "\U000F0F55", # home-thermometer-outline
+          "\U000F18D6", # sun-thermometer
+          "\U000F19B2", # arrow-up-thin
+          "\U000F19B3", # arrow-down-thin
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          "\U000F0E0A", # water-outline
+          ]  
+
+  - file: "$font"
+    id: regular_25
+    size: 25
+    bpp: 4
+    glyphs: ${characters}
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F1A79",  # mdi:sun-snowflake-variant
+          "\U000F0717",  # mdi:snowflake
+          "\U000F0238",  # mdi:fire
+          "\U000F058E",  # mdi:water-percent
+          "\U000F0210",  # mdi:fan
+          "\U000F171D",  # mdi:fan-auto
+          "\U000F1474",  # mdi:fan-speed-3
+          "\U000F1473",  # mdi:fan-speed-2
+          "\U000F1472",  # mdi:fan-speed-1
+          "\U000F0425",   # mdi:power
+          "\U000F1A78", # sun-clock-outline
+          "\U000F19B2", # arrow-up-thin
+          "\U000F19B3", # arrow-down-thin
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          ]   
+  - file: "$font"
+    id: regular_30
+    size: 30
+    bpp: 4
+    glyphs: ${characters}
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F1A79",  # mdi:sun-snowflake-variant
+          "\U000F0717",  # mdi:snowflake
+          "\U000F0238",  # mdi:fire
+          "\U000F058E",  # mdi:water-percent
+          "\U000F0210",  # mdi:fan
+          "\U000F171D",  # mdi:fan-auto
+          "\U000F1474",  # mdi:fan-speed-3
+          "\U000F1473",  # mdi:fan-speed-2
+          "\U000F1472",  # mdi:fan-speed-1
+          "\U000F0425",   # mdi:power
+          "\U000F1A78", # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          ]   
+  - file: "$font"
+    id: regular_40
+    size: 40
+    bpp: 4
+    glyphs: ${characters}     
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F0F54",  # mdi:air-conditioner
+          "\U000F0F92",  # mdi:water-boiler
+          "\U000F0439",  # mdi:radio
+          "\U000F07AE",  # mdi:cctv
+          "\U000F1A57",  # mdi:meter-electric
+          "\U000F0493",  # mdi:cog
+          "\U000F040A",  # mdi:play
+          "\U000F03E4",  # mdi:pause
+          "\U000F04DB",  # mdi:stop
+          "\U000F075D",  # mdi:volume-plus
+          "\U000F075E",  # mdi:volume-minus
+          "\U000F0581",  # mdi:volume-off
+          "\U000F04AE",  # mdi:skip-previous
+          "\U000F04AD",  # mdi:skip-next
+          "\U000F0143",  # mdi:chevron-up
+          "\U000F0140",  # mdi:chevron-down
+          "\U000F1A2E",  # mdi:blinds-vertical-closed
+          "\U000F1A2D",  # mdi:blinds-vertical        
+          "\U000F084E",  # mdi:arrow-expand-horizontal
+          "\U000F084C",  # mdi:arrow-collapse-horizontal
+          "\U000F010C",  # car-battery
+          "\U000F1A74",  # solar-power-variant-outline
+          "\U000F1A73",  # solar-power-variant
+          "\U000F0A72",  # solar-power
+          "\U000F1A78",  # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          "\U000F0F61", # moon-first-quarter
+          "\U000F0F62", # moon-full
+          "\U000F0F63", # moon-last-quarter
+          "\U000F0F64", # moon-new
+          "\U000F0F65", # moon-waning-crescent
+          "\U000F0F66", # moon-waning-gibbous
+          "\U000F0F67", # moon-waxing-crescent
+          "\U000F0F68", # moon-waxing-gibbous
+          ]   
+  - file: "$font"
+    id: regular_50
+    size: 45
+    bpp: 4
+    glyphs: ${characters}     
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F0F54",  # mdi:air-conditioner
+          "\U000F0F92",  # mdi:water-boiler
+          "\U000F0439",  # mdi:radio
+          "\U000F07AE",  # mdi:cctv
+          "\U000F1A57",  # mdi:meter-electric
+          "\U000F0493",  # mdi:cog
+          "\U000F040A",  # mdi:play
+          "\U000F03E4",  # mdi:pause
+          "\U000F04DB",  # mdi:stop
+          "\U000F075D",  # mdi:volume-plus
+          "\U000F075E",  # mdi:volume-minus
+          "\U000F0581",  # mdi:volume-off
+          "\U000F04AE",  # mdi:skip-previous
+          "\U000F04AD",  # mdi:skip-next
+          "\U000F0143",  # mdi:chevron-up
+          "\U000F0140",  # mdi:chevron-down
+          "\U000F1A2E",  # mdi:blinds-vertical-closed
+          "\U000F1A2D",  # mdi:blinds-vertical        
+          "\U000F084E",  # mdi:arrow-expand-horizontal
+          "\U000F084C",  # mdi:arrow-collapse-horizontal
+          "\U000F010C",  # car-battery
+          "\U000F1A74",  # solar-power-variant-outline
+          "\U000F1A73",  # solar-power-variant
+          "\U000F1A78",  # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          ]   
+  - file: "$font"
+    id: weather_60
+    size: 60
+    bpp: 4
+    glyphs: ${characters}
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F1A79",  # mdi:sun-snowflake-variant
+          "\U000F0717",  # mdi:snowflake
+          "\U000F0238",  # mdi:fire
+          "\U000F058E",  # mdi:water-percent
+          "\U000F0210",  # mdi:fan
+          "\U000F0425",   # mdi:power
+          "\U000F1A78",  # sun-clock-outline
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          ]
+
+  - file: "$font"
+    id: title_font
+    size: 18
+    bpp: 4
+    glyphs: ${characters}
+    extras:
+      - file: '$mdi'
+        glyphs: [
+          "\U000F05A9", # mdi:wifi
+          "\U000F16C5", # mdi:wifi-remove
+          "\U000F001B", # mdi:air-conditioner
+          "\U000F0F92", # mdi:water-boiler
+          "\U000F1099", # mdi:air-humidifier
+          "\U000F0D44", # mdi:air-purifier
+          "\U000F1A73", # mdi:solar-power-variant
+          "\U000F192C"  # mdi:transmission-tower-export
+          ]  
+          
+
+################################################################################
+# LVGL
+################################################################################
+lvgl:  
+  theme:
+    slider:
+      border_width: 1
+      border_opa: 15%
+      bg_color: 0xcccaca
+      bg_opa: 15%
+      pad_all: 8
+      indicator:
+        bg_color: 0x2F8CD8
+        bg_opa: COVER
+        height: 20
+      knob:
+        bg_color: 0xFFFFFF  #2F8CD8
+        bg_opa: COVER
+        width: 35
+        border_color: 0x0077b3        
+        border_width: 10
+        outline_width: 1 
+    arc:
+      bg_color: 0
+      bg_opa: TRANSP
+      arc_color: 0x111111
+      arc_opa: COVER
+      arc_width: 30
+      indicator:
+        bg_color: 0x2F8CD8
+        bg_opa: COVER        
+        arc_width: 30
+      knob:
+        bg_color: 0xFFFFFF
+        bg_opa: COVER
+        border_color: 0x4EAFFC
+        border_width: 10
+        outline_width: 2  
+  style_definitions:
+    - id: title_bar
+      text_font: title_font
+      text_color: 0xD5D5D5
+      bg_color: my_black #0
+      bg_opa: 95% #TRANSP
+      border_width: 0
+      border_opa: TRANSP
+      radius: 0
+      pad_all: 0
+      shadow_opa: TRANSP
+      width: 100%
+    - id: base_style
+      text_color: 0xD5D5D5
+      bg_opa: TRANSP 
+      border_opa: TRANSP
+      border_width: 0
+      pad_all: 0
+      shadow_width: 0
+      shadow_opa: TRANSP
+      radius: 0
+    - id: card
+      text_color: 0xD5D5D5
+      bg_color: my_dark_blue #0x222222
+      bg_opa: 100%
+      border_width: 0
+      border_color: 0
+      radius: 20
+      pad_all: 0
+    - id: card_menu
+      text_color: 0xD5D5D5
+      bg_color: 0x232C31
+      bg_opa: 100%
+      border_width: 0
+      border_color: 0
+      radius: 20
+      pad_all: 0
+    - id: card_new
+      text_color: 0xD5D5D5
+      bg_color: 0x232C31
+      bg_opa: 100%
+      border_width: 0
+      border_color: 0
+      radius: 20
+      pad_all: 0
+    - id: meter_style
+      text_color: 0xD5D5D5
+      bg_color: 0x222222
+      bg_opa: COVER
+      radius: 10
+      outline_width: 0
+      border_width: 0
+      pad_all: 0
+    - id: button_menu
+      text_color: 0xffffff
+      bg_color: 0x333333
+      bg_opa: COVER
+      radius: 5
+      pad_all: 5
+    - id: button_checked
+      bg_color: 0xFF4400
+      bg_opa: COVER
+      text_color: 0xD5D5D5
+      radius: 20
+      pad_all: 8
+    - id: tab_style
+      border_width: 0
+      border_color: 0x0077b3
+      border_opa: TRANSP
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782                  
+      bg_grad_dir: VER
+      pad_all: 0                  
+      width: 100%
+      height: 50
+      text_font: regular_25
+      text_align: CENTER
+    - id: menu_button
+      radius: 75
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x0460BD
+      bg_grad_dir: VER
+      border_width: 5
+      border_color: 0x1e84eb
+      border_opa: 50%
+      outline_width: 1
+  pages:
+    - id: main_page
+      bg_color: my_black
+      widgets:
+
+# status bar
+        - obj:
+            x: 0
+            y: 0
+            width: 800
+            height: 30
+            styles : title_bar
+            widgets:
+              - obj:
+                  width: 350
+                  height: 100%
+                  styles : title_bar
+                  align: TOP_LEFT
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_main: START
+                  widgets:                  
+                    - label:
+                        text: "AM 00:00"
+                        id: title_time
+                        align: BOTTOM_LEFT
+                        text_align: left
+
+              - label:
+                  text: "2000-00-00(SUN)"
+                  id: title_date
+                  align: TOP_MID
+                  x: 0
+                  y: 2
+                  text_align: CENTER
+              - obj:
+                  width: 320
+                  height: 100%
+                  styles : title_bar
+                  align: TOP_RIGHT
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_main: END
+                  widgets:
+                    - label:
+                        text: "\U000F192C 0 W"
+                        id: energy_meter_power_title
+                        align: BOTTOM_RIGHT 
+                        text_align: right                    
+                    - label:
+                        text: "HA"
+                        id: ha_connected_title
+                        hidden: true
+                        text_align: RIGHT
+                    - label:
+                        text: "\U000F16C5"
+                        id: wifi_icon
+                        align: BOTTOM_RIGHT
+                        text_align: right
+
+#new UI
+        - obj:
+            x: 0
+            y: 30
+            align: TOP_LEFT
+            styles: base_style
+            width: 800
+            height: 450
+            id: test_card
+            widgets:
+#solar
+            - button:
+                x: 0
+                y: 0
+                width: 262
+                height: 140
+                styles: card_new
+                id: import_card2
+                pad_all: 10
+                widgets:
+                 - label:
+                    x: 0
+                    y: 0
+                    align: TOP_LEFT
+                    text_align: LEFT
+                    text: "Solar"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: -9
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "----W"
+                    id: luxpower_lxp_pv_power_text3
+                    text_font: regular_50
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 37
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F1A74" # solar-power-variant-outline 
+                    id: luxpower_lxp_pv_power_icon3
+                    text_font: roboto_80
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 60
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "today"
+                    #id: luxpower_lxp_pv_power_text22
+                    text_font: regular_25
+                    #text_color: not_active_text
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: 90
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "---KWh"
+                    id: daily_luxpower_lxp_pv_power_text2
+                    text_font: regular_30
+                    #text_color: not_active_text    
+                    text_color: white_text_color
+#House load
+            - button:
+                x: 268
+                y: 0
+                width: 262
+                height: 140
+                styles: card_new
+                id: house_load_card2
+                pad_all: 10
+                widgets:
+                 - label:
+                    x: 0
+                    y: 0
+                    align: TOP_LEFT
+                    text_align: LEFT
+                    text: "Load"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: -9
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "----W"
+                    id: house_load_text2
+                    text_font: regular_50
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 37
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F1903" #home-lightning-bolt
+                    #id: luxpower_lxp_pv_power_text3
+                    text_font: roboto_80
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 60
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "today"
+                    #id: luxpower_lxp_pv_power_text22
+                    text_font: regular_25
+                    #text_color: not_active_text
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: 90
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "---KWh"
+                    id: daily_load_energy_text2
+                    text_font: regular_30
+                    #text_color: not_active_text    
+                    text_color: white_text_color
+# battery
+            - button:
+                x: 536
+                y: 0
+                width: 262
+                height: 140
+                styles: card_new
+                id: battery_card2
+                pad_all: 10
+                widgets:
+                 - label:
+                    x: 0
+                    y: 0
+                    align: TOP_LEFT
+                    text_align: LEFT
+                    text: "Battery"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: -9
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "----W"
+                    id: house_battery_power_text2
+                    text_font: regular_50
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 37
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F0091" # battery-unknown
+                    id: house_battery_power_text_icon1
+                    text_font: roboto_80
+                    text_color: active_value_text_color
+                 - label:
+                    x: 60
+                    y: 55
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F0534" # trending-neutral
+                    id: house_battery_power_text_icon2
+                    text_font: roboto_56
+                    text_color: active_value_text_color
+                    
+                 - label:
+                    x: 0
+                    y: 60
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "this year"
+                    #id: luxpower_lxp_pv_power_text22
+                    text_font: regular_25
+                    #text_color: not_active_text
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: 90
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "$---"
+                    id: yearly_pv_cost2
+                    text_font: regular_30
+                    #text_color: not_active_text    
+                    text_color: white_text_color
+#solar gauge
+            - button:
+                x: 0
+                y: 145
+                width: 262
+                height: 140
+                styles: card_new
+                id: solar_pv_info
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F0A72"  # solar-power
+                      #id: luxpower_lxp_pv_power_text2
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_RIGHT
+                      text: "\U000F1A73" # solar-power-variant
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
+                  - label:
+                      x: -10
+                      y: 5
+                      align: BOTTOM_LEFT
+                      text_align: LEFT
+                      text: "\U000F059C --:--:--"
+                      id: home_weather_sunrise3
+                      recolor: true
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 20
+                      y: 5
+                      align: BOTTOM_RIGHT
+                      text_align: LEFT
+                      text: "--:--:-- \U000F059B"
+                      id: home_weather_sunset3
+                      recolor: true
+                      text_font: regular_20
+                  - meter:
+                      x: 0
+                      y: 5
+                      width: 145
+                      height: 145
+                      border_width: 0
+                      bg_opa: TRANSP
+                      align: CENTER
+                      scales:
+                        - range_from: 0
+                          range_to: 10000
+                          angle_range: 250
+                          ticks:
+                            count: 0
+                          indicators:
+                            - line:
+                                id: luxpower_lxp_pv_power_needle2
+                                width: 5
+                                color: 0xE5E5E5
+                                r_mod: 13
+                                value: "0"
+                            - arc: 
+                                color: 0xE86E02
+                                r_mod: 10 
+                                width: 25
+                                start_value: 0
+                                end_value: 1000
+                            - arc: 
+                                color: 0x02D109
+                                r_mod: 10
+                                width: 25
+                                start_value: 1000
+                                end_value: 4000
+                            - arc: 
+                                color: 0x02d189
+                                r_mod: 10
+                                width: 25
+                                start_value: 4000
+                                end_value: 7000
+                            - arc: 
+                                color: 0x0285D1
+                                r_mod: 10
+                                width: 25
+                                start_value: 7000
+                                end_value: 10000
+                  - label:
+                      x: 0
+                      y: 40
+                      align: CENTER
+                      text: "----"
+                      id: luxpower_lxp_pv_power_text4
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
+
+
+# grid import
+            - button:
+                x: 268
+                y: 145
+                width: 262
+                height: 140
+                styles: card_new
+                id: import_card
+                pad_all: 10
+                widgets:
+                 - label:
+                    x: 0
+                    y: 0
+                    align: TOP_LEFT
+                    text_align: LEFT
+                    text: "Import"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: -9
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "----W"
+                    id: grid_power_text2
+                    text_font: regular_50
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 37
+                    align: TOP_LEFT
+                    text_align: CENTER
+                    text: "\U000F192C" # transmission-tower-export                    
+                    id: grid_power_icon2
+                    text_font: roboto_80
+                    text_color: active_value_text_color
+                 - label:
+                    x: 0
+                    y: 60
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "today"
+                    #id: luxpower_lxp_pv_power_text2
+                    text_font: regular_25
+                    #text_color: not_active_text
+                    text_color: white_text_color
+                 - label:
+                    x: 0
+                    y: 90
+                    align: TOP_RIGHT
+                    text_align: RIGHT
+                    text: "---KWh"
+                    id: daily_grid_energy_text2
+                    text_font: regular_30
+                    #text_color: not_active_text
+                    text_color: white_text_color
+#battery gauge
+            - button:
+                x: 536
+                y: 145
+                width: 262
+                height: 140
+                styles: card_new
+                id: battery_info
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F010C"  # car-battery
+                      #id: luxpower_lxp_pv_power_text2
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_RIGHT
+                      text: "\U000F010C"  # car-battery
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER    
+                  - meter:
+                      x: 0
+                      y: 5
+                      width: 145
+                      height: 145
+                      border_width: 0
+                      bg_opa: TRANSP
+                      align: CENTER
+                      scales:
+                        - range_from: 0
+                          range_to: 100
+                          angle_range: 250
+                          ticks:
+                            count: 0
+                          indicators:
+                            - line:
+                                id: luxpower_lxp_battery_state_of_charge_needle2
+                                width: 5
+                                color: 0xE5E5E5
+                                r_mod: 13
+                                value: "0"
+                            - arc: 
+                                color: 0xE86E02
+                                r_mod: 10 
+                                width: 25
+                                start_value: 0
+                                end_value: 21
+                            - arc: 
+                                color: 0x02D109
+                                r_mod: 10
+                                width: 25
+                                start_value: 21
+                                end_value: 80
+                            - arc: 
+                                color: 0x02d189
+                                r_mod: 10
+                                width: 25
+                                start_value: 80
+                                end_value: 90
+                            - arc: 
+                                color: 0x0285D1
+                                r_mod: 10
+                                width: 25
+                                start_value: 90
+                                end_value: 100
+                  - label:
+                      x: 0
+                      y: 40
+                      align: CENTER
+                      text: "----"
+                      id: luxpower_lxp_battery_state_of_charge_text2
+                      text_font: regular_40
+                      text_color: 0xE5E5E5
+                      text_align: CENTER
+
+# NOW
+            - button:
+                x: 0
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_now
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "Now"
+                      #id: home_weather_now
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_text2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: outdoor_temperature_text
+                      text_font: regular_25
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_now
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0F64" # moon-new
+                      id: moon_phase_icon_now
+                      text_font: regular_40
+                      text_color: white_text_color
+#                  - label:
+#                      x: 0
+#                      y: 55
+#                      align: TOP_LEFT
+#                      text_align: LEFT
+#                      text: "\U000F059C --:--:--"
+#                      id: home_weather_sunrise2
+#                      recolor: true
+#                      text_font: regular_20
+#                      text_color: white_text_color
+#                  - label:
+#                      x: 0
+#                      y: 73
+#                      align: TOP_RIGHT
+#                      text_align: LEFT
+#                      text: "--:--:-- \U000F059B"
+#                      id: home_weather_sunset2
+#                      recolor: true
+#                      text_font: regular_20
+#                      text_color: white_text_color
+
+
+#day 0
+            - button:
+                x: 160
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_0
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_day_0
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_condition_text_day_0
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_day_0
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_text_day_0
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 75
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_probability_text_day_0
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_0_precipitation_icon
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_day_0
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_day_0
+                      text_font: regular_20
+                      text_color: white_text_color
+#day 1    
+            - button:
+                x: 320
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_day_1
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_day_1
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_condition_text_day_1
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_day_1
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_text_day_1
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 75
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_probability_text_day_1
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_1_precipitation_icon
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_day_1
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_day_1
+                      text_font: regular_20
+                      text_color: white_text_color
+
+#day 2
+            - button:
+                x: 480
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_day_2
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_day_2
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_condition_text_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_day_2
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_text_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 75
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_probability_text_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_2_precipitation_icon
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_day_2
+                      text_font: regular_20
+                      text_color: white_text_color
+
+#day 3
+            - button:
+                x: 640
+                y: 290
+                width: 156
+                height: 105
+                styles: card_new
+                id: weather_day_3
+                pad_all: 10
+                widgets:
+                  - label:
+                      x: 0
+                      y: 0
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: home_weather_day_3
+                      text_font: regular_20
+                      text_color: active_value_text_color
+                  - label:
+                      x: 0
+                      y: 36
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: forecast_condition_text_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 55
+                      align: TOP_LEFT
+                      text_align: LEFT
+                      text: "\U000F14E4" # sunny-off
+                      id: forecast_condition_icon_day_3
+                      text_font: regular_40
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B2" # arrow-up-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_text_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 75
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---"
+                      id: precipitation_probability_text_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 55
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F0E0A" # water-outline
+                      id: day_3_precipitation_icon
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 0
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_max_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: 5
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "\U000F19B3" # arrow-down-thin
+                      text_font: regular_20
+                      text_color: white_text_color
+                  - label:
+                      x: -15
+                      y: 20
+                      align: TOP_RIGHT
+                      text_align: LEFT
+                      text: "---°"
+                      id: home_weather_min_day_3
+                      text_font: regular_20
+                      text_color: white_text_color
+################################################################################
+# END OF VLGL
+################################################################################
+
+
+################################################################################
+# I2C config
+################################################################################
+i2c:
+  sda: GPIO08
+  scl: GPIO09
+  scan: True
+  id: bus_a
+
+################################################################################
+# Define display
+################################################################################
+display:
+  - platform: rpi_dpi_rgb
+    id: my_display
+    update_interval: never
+    auto_clear_enabled: false
+    color_order: RGB
+    pclk_frequency: 16MHZ
+    dimensions:
+      width: 800
+      height: 480
+    de_pin:
+      number: 5
+    hsync_pin:
+      number: 46
+      ignore_strapping_warning: true
+    vsync_pin:
+      number: 3
+      ignore_strapping_warning: true
+    pclk_pin: 7
+    pclk_inverted: true
+    reset_pin:
+      ch422g: ch422g_hub
+      number: 3
+#    enable_pin:
+#      ch422g: ch422g_hub
+#      number: 2  
+    hsync_back_porch: 8
+    hsync_front_porch: 8
+    hsync_pulse_width: 4
+    vsync_back_porch: 16
+    vsync_front_porch: 16
+    vsync_pulse_width: 4
+    data_pins:
+      red:
+        - 1         #r3
+        - 2         #r4
+        - 42        #r5
+        - 41        #r6
+        - 40        #r7
+      blue:
+        - 14        #b3
+        - 38        #b4
+        - 18        #b5
+        - 17        #b6
+        - 10        #b7
+      green:
+        - 39        #g2
+        - 0         #g3
+        - 45        #g4
+        - 48        #g5
+        - 47        #g6
+        - 21        #g7
+
+################################################################################
+# Define touchscreen
+################################################################################
+touchscreen:
+  platform: gt911
+  id: my_touch
+  interrupt_pin: GPIO4
+  reset_pin:
+    ch422g: ch422g_hub
+    number: 1
+    mode: OUTPUT
+  on_touch:
+    - lambda: |-
+        ESP_LOGI("Touch", "Touch detected at x=%d, y=%d", touch.x, touch.y);
+  on_update:
+    - lambda: |-
+          for (auto touch: touches)  {
+              if (touch.state <= 2) {
+                ESP_LOGI("Touch points:", "id=%d x=%d, y=%d x.raw=%d, y.raw=%d", touch.id, touch.x, touch.y, touch.x_raw, touch.y_raw);
+              }
+          }  
+
+
