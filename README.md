@@ -6,8 +6,9 @@ The case for the display is 3D printed based on [Sergey Morozov design](https://
 <img src="Display.png" alt="Example of "><br>
 
 The color are bit off and on real display they look like this a sample image <br>
-<img src="example.png" alt="Example" style="height:50%;" ><br>
+<img src="example.png" alt="Example" style="height:25%;" ><br>
 The icons change color if the production/consumption from the category is active to help indicating what is being used to power the house loads.
 
 <br>
-The Waveshare 7 inch display config is based on the work of [DMonkey-hub](https://github.com/DMonkey-hub/esphome/blob/main/README.md)
+
+The Waveshare 7 inch display config is based on the work of [DMonkey-hub](https://github.com/DMonkey-hub/esphome/blob/main/README.md)<br>
