@@ -100,6 +100,17 @@ switch:
       inverted: false
     restore_mode: ALWAYS_ON
 
+  - platform: homeassistant
+    id: flexboss21_44700e0193_battery_backup_mode
+    entity_id: switch.flexboss21_44700e0193_battery_backup_mode
+    on_turn_on:
+      - lvgl.label.update:
+          id: flexboss21_44700e0193_battery_backup_mode_text
+          text: "Battery Backup ON"
+    on_turn_off:
+      - lvgl.label.update:
+          id: flexboss21_44700e0193_battery_backup_mode_text
+          text: "Self Consumption Mode"
 ################################################################################
 # Enable logging
 ################################################################################
@@ -576,6 +587,26 @@ sensor:
             state: !lambda |-
               return x*0.171822;      
 
+  - platform: homeassistant
+    id: solar_forecast_next_day
+    entity_id: input_number.solar_forecast_next_day
+    on_value:
+      - lvgl.label.update:
+          id: solar_forecast_next_day_text
+          text:
+            format: "%.0f%%"
+            args: [ 'x' ]
+
+  - platform: homeassistant
+    id: pv_forecast_charge_tomorrow_kw
+    entity_id: input_number.pv_forecast_charge_tomorrow_kw
+    on_value:
+      - lvgl.label.update:
+          id: pv_forecast_charge_tomorrow_kw_text
+          text:
+            format: "%.1fK"
+            args: [ 'x' ]
+
   - platform: template
     id: yearly_pv_energy_cost
     on_value:
@@ -814,6 +845,16 @@ text_sensor:
       - lvgl.label.update:
           id: forecast_condition_icon_now
           text: !lambda return weather_icon.get(id(weather_home).state);
+
+  - platform: homeassistant
+    id: luxpower_lxp_device_mode
+    entity_id: sensor.luxpower_lxp_device_mode
+    on_value:
+      - lvgl.label.update:
+          id: luxpower_lxp_device_mode_text
+          text: 
+            format: "%s"
+            args: [ x.c_str() ]
 
 
   - platform: template
@@ -1942,17 +1983,35 @@ lvgl:
                       align: TOP_LEFT
                       text_align: LEFT
                       text: "\U000F010C"  # car-battery
-                      #id: luxpower_lxp_pv_power_text2
                       text_font: regular_40
                       text_color: white_text_color
                   - label:
                       x: 0
                       y: 0
                       align: TOP_RIGHT
-                      text: "\U000F010C"  # car-battery
+                      text: "\U000F1A73" # solar-power-variant
                       text_font: regular_40
                       text_color: 0xE5E5E5
                       text_align: CENTER    
+                  - label:
+                      x: 0
+                      y: 0
+                      align: BOTTOM_LEFT
+                      text_align: LEFT
+                      text: "---"
+                      id: solar_forecast_next_day_text
+                      text_font: regular_25
+                      text_color: white_text_color
+                  - label:
+                      x: 0
+                      y: 0
+                      align: BOTTOM_RIGHT
+                      text_align: LEFT
+                      text: "---K"
+                      id: pv_forecast_charge_tomorrow_kw_text
+                      text_font: regular_25
+                      text_color: white_text_color
+
                   - meter:
                       x: 0
                       y: 5
@@ -1966,7 +2025,7 @@ lvgl:
                           range_to: 100
                           angle_range: 250
                           ticks:
-                            count: 0
+                            count: 10
                           indicators:
                             - line:
                                 id: luxpower_lxp_battery_state_of_charge_needle2
@@ -2479,6 +2538,51 @@ lvgl:
                       id: home_weather_min_day_3
                       text_font: regular_20
                       text_color: white_text_color
+
+# footer bar
+        - obj:
+            x: 0
+            y: 440
+            width: 800
+            height: 40
+            styles : title_bar
+            widgets:
+              - obj:
+                  width: 350
+                  height: 100%
+                  styles : title_bar
+                  align: TOP_LEFT
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_main: START
+                  widgets:
+                    - label:
+                        y: 15
+                        text: "--unknown--"
+                        id: luxpower_lxp_device_mode_text
+                        text_font: regular_25
+                        align: BOTTOM_LEFT
+                        text_align: left
+              - obj:
+                  width: 320
+                  height: 100%
+                  styles : title_bar
+                  align: TOP_RIGHT
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_main: END
+                  widgets:                        
+                    - label:
+                        y: 15
+                        text: "---"
+                        id: flexboss21_44700e0193_battery_backup_mode_text
+                        text_font: regular_25
+                        align: BOTTOM_RIGHT
+                        text_align: right
+
+                        
 ################################################################################
 # END OF VLGL
 ################################################################################
